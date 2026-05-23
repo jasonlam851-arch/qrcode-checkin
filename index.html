@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>極速智慧簽到系統</title>
-    <!-- 🚀 引入高效能解碼庫 Html5Qrcode -->
+    <!-- 🚀 引入高效能解碼庫 Html5Qrcode 與 二維碼生成庫 -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
@@ -158,7 +158,7 @@
             <button class="nav-btn" onclick="switchMode('scanner')">📷 管理員掃描</button>
         </div>
 
-        <!-- 面板 A -->
+        <!-- 面板 A：員工出示 QR Code -->
         <div id="displayPanel" class="panel active">
             <h3>請選擇您的身分</h3>
             <p>出示下方 QR Code 即可進行簽到</p>
@@ -170,7 +170,7 @@
             <div class="qr-box"><div id="qrcode"></div></div>
         </div>
 
-        <!-- 面板 B -->
+        <!-- 面板 B：管理員掃描鏡頭 -->
         <div id="scannerPanel" class="panel">
             <h3>將二維碼放入框內</h3>
             <p>即時驗證：支援過濾無效碼與重複簽到</p>
@@ -184,7 +184,7 @@
             
             <div class="footer-info">
                 <button class="clear-btn" onclick="clearRecords()">重置今日紀錄 (測試用)</button>
-                <span class="version-tag">v2.2.0-Build2026</span>
+                <span class="version-tag">v2.2.1-Build2026</span>
             </div>
         </div>
     </div>
@@ -196,14 +196,15 @@
             "EMP_003": "王大同"
         };
 
+        // 🔗 您的 Google Apps Script 網頁應用程式網址
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyM4gOAFtIAW3ihSjdL-Q9vfZEAJECvAE3CjQ8P5tK9yEKoTTcqOPrUwh0yFMv-JZh9AQ/exec";
 
         let html5QrcodeScanner = null;
         let isProcessing = false;
-        let isCameraChanging = false; // 🔒 新增：防止非同步切換相機衝突的安全鎖
+        let isCameraChanging = false; 
 
         async function switchMode(mode) {
-            if (isCameraChanging) return; // 如果相機還在開關中，直接無視惡意點擊
+            if (isCameraChanging) return; 
             
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -277,7 +278,7 @@
                     alert("無法啟動相機。");
                 }
             } finally {
-                isCameraChanging = false; // 相機開完，解鎖分頁按鈕
+                isCameraChanging = false; 
             }
         }
 
@@ -317,18 +318,24 @@
             sendToGoogleSheets(decodedText, employees[decodedText]);
         }
 
+        // 💡 優化：改用標準 URLSearchParams 表單編碼格式打包 POST 數據
         function sendToGoogleSheets(id, name) {
             document.getElementById('loadingStatus').style.display = 'block';
             if (navigator.vibrate) navigator.vibrate(100); 
 
-            const uploadUrl = `${GAS_URL}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+            const formData = new URLSearchParams();
+            formData.append('id', id);
+            formData.append('name', name);
 
-            fetch(uploadUrl, {
+            fetch(GAS_URL, {
                 method: "POST",
-                mode: "no-cors" 
+                mode: "no-cors", 
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: formData.toString()
             })
             .then(() => {
-                // 💡 體驗優化：先隱藏讀取字樣，並延遲 100ms 讓 UI 順利渲染隱藏後，才跳出 alert
                 document.getElementById('loadingStatus').style.display = 'none';
                 
                 try {
