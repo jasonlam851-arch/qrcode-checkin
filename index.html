@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>極速智慧簽到系統</title>
-    <!-- 🚀 升級：引入全球最強、最靈敏的手機解碼庫 Html5Qrcode -->
+    <!-- 🚀 引入高效能解碼庫 Html5Qrcode -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
@@ -38,6 +38,7 @@
             padding: 24px; 
             box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.04); 
             text-align: center; 
+            position: relative;
         }
         
         .nav-tabs { 
@@ -90,17 +91,16 @@
             border: 1px solid #f1f5f9; 
         }
         
-        /* 📷 像 iPhone 原生相機一樣高質感的滿版極简設計 */
+        /* 📷 優化框架過高問題：調整高度比例 */
         .scanner-view { 
             position: relative; 
             width: 100%; 
-            padding-top: 100%; /* 1:1 正方形 */
+            padding-top: 85%; /* 從原本的 100% 縮減到 85%，降低整體掃描窗高度 */
             background: #000; 
             border-radius: 20px; 
             overflow: hidden; 
         }
         
-        /* 讓相機視窗完全填滿 */
         #preview { 
             position: absolute; 
             top: 0; left: 0; 
@@ -118,13 +118,13 @@
             z-index: 10;
         }
         
-        /* ✨ iPhone 風格：純白色、極簡、微圓角的瞄準框 */
+        /* ✨ 配合高度調整瞄準框 */
         .box { 
             width: 60%; 
-            height: 60%; 
-            border: 2px solid rgba(255, 255, 255, 0.8); 
+            height: 70%; /* 拉長一點配合 85% 的長寬比 */
+            border: 2px solid rgba(255, 255, 255, 0.85); 
             border-radius: 16px; 
-            box-shadow: 0 0 0 400px rgba(0, 0, 0, 0.35); /* 輕量柔和的半透明背景 */
+            box-shadow: 0 0 0 400px rgba(0, 0, 0, 0.4); 
         }
         
         .loading { 
@@ -135,9 +135,18 @@
             font-size: 14px;
         }
         
-        /* 管理功能：清除今日簽到快取（測試用） */
+        /* 底部工具區與版本號碼 */
+        .footer-info {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .clear-btn {
-            background: none; border: none; color: #94a3b8; font-size: 11px; margin-top: 15px; cursor: pointer; text-decoration: underline;
+            background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0;
+        }
+        .version-tag {
+            font-size: 11px; color: #cbd5e1; font-family: monospace;
         }
     </style>
 </head>
@@ -164,7 +173,7 @@
         <!-- 面板 B -->
         <div id="scannerPanel" class="panel">
             <h3>將二維碼放入框內</h3>
-            <p>新版高感度引擎：支援微小、快速掃描</p>
+            <p>即時驗證：支援過濾無效碼與重複簽到</p>
             <div class="scanner-view">
                 <div id="preview"></div>
                 <div class="overlay">
@@ -172,7 +181,11 @@
                 </div>
             </div>
             <div id="loadingStatus" class="loading">⏳ 正在同步寫入 Google Excel...</div>
-            <button class="clear-btn" onclick="clearRecords()">重置今日簽到紀錄 (測試用)</button>
+            
+            <div class="footer-info">
+                <button class="clear-btn" onclick="clearRecords()">重置今日紀錄 (測試用)</button>
+                <span class="version-tag">v2.1.0-Build2026</span>
+            </div>
         </div>
     </div>
 
@@ -216,7 +229,6 @@
             });
         }
 
-        // 停止新版掃描器
         async function stopScanner() {
             if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
                 await html5QrcodeScanner.stop();
@@ -226,80 +238,71 @@
             document.getElementById('loadingStatus').style.display = 'none';
         }
 
-        // 啟動超強性能新相機
         async function startAdvancedScanner() {
             if (html5QrcodeScanner) await stopScanner();
             
-            // 實例化新引擎
             html5QrcodeScanner = new Html5Qrcode("preview");
             
             const config = {
-                fps: 20,                  // 每秒解碼 20 次，極速捕捉
-                qrbox: function(vw, vh) { // 動態計算瞄準框
+                fps: 25, // 提高到 25 影格，捕捉速度更快
+                qrbox: function(vw, vh) {
                     const size = Math.min(vw, vh) * 0.65;
                     return { width: size, height: size };
-                },
-                aspectRatio: 1.0          // 強制 1:1 畫面不拉伸歪斜
+                }
             };
 
             try {
-                // 強制調用後置主鏡頭
                 await html5QrcodeScanner.start(
                     { facingMode: "environment" }, 
                     config,
                     onScanSuccess
                 );
             } catch (err) {
-                console.error("無法開啟後鏡頭，嘗試預設相機:", err);
+                console.error(err);
                 try {
                     await html5QrcodeScanner.start({ facingMode: "user" }, config, onScanSuccess);
                 } catch(e) {
-                    alert("無法啟動相機權限，請確認瀏覽器隱私設定。");
+                    alert("無法啟動相機。");
                 }
             }
         }
 
-        // 當新引擎成功抓到任何二維碼時（無論對錯，100% 觸發）
-        async function onScanSuccess(decodedText) {
-            if (isProcessing) return; // 防禦機制：正在處理中就無視
-            isProcessing = true;
-            
-            // 暫停相機解碼，畫面不卡死
-            if (html5QrcodeScanner) await html5QrcodeScanner.pause();
+        // 🟢 核心修正：取消暫停視訊，完全靠背景 isProcessing 鎖定
+        function onScanSuccess(decodedText) {
+            if (isProcessing) return; 
+            isProcessing = true; // 鎖定背景，防止重複彈出
 
-            // 1. 讀取手機本地紀錄，檢查是否已經簽到過
             let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
 
-            // 2. 判斷是否為無效的二維碼
+            // 1. 驗證是否為無效二維碼
             if (!employees[decodedText]) {
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // 錯誤震動
-                alert(`❌ 該二維碼無效！\n\n內容："${decodedText}"\n不屬於本公司員工名冊。`);
-                resumeScanner();
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
+                
+                // 💡 延遲一下跳出，確保 alert 不會卡死瀏覽器線程
+                setTimeout(() => {
+                    alert(`❌ 該二維碼無效！\n\n內容："${decodedText}"\n非系統認證的員工工號。`);
+                    isProcessing = false; // 按下確認後，背景秒解鎖，相機本來就是動的，立刻能重掃
+                }, 50);
                 return;
             }
 
-            // 3. 判斷是否「重複簽到」
+            // 2. 驗證是否重複簽到
             if (checkedRecords.includes(decodedText)) {
                 if (navigator.vibrate) navigator.vibrate([200]); 
-                alert(`⚠️ 提示：【${employees[decodedText]}】今天已經簽到過了，請勿重複掃描！`);
-                resumeScanner();
+                setTimeout(() => {
+                    alert(`⚠️ 已簽到，掃描無效！\n\n【${employees[decodedText]}】今日已有簽到紀錄，請勿重複發送。`);
+                    isProcessing = false; 
+                }, 50);
                 return;
             }
 
-            // 4. 通過以上驗證，確認是「初次簽到成功」的合法員工 ➔ 發送到 Google
+            // 3. 通過驗證，執行正確簽到
             sendToGoogleSheets(decodedText, employees[decodedText]);
         }
 
-        // 讓相機恢復運作的輔助函數
-        function resumeScanner() {
-            isProcessing = false;
-            if (html5QrcodeScanner) html5QrcodeScanner.resume();
-        }
-
-        // 發送數據到 Google Excel 
         function sendToGoogleSheets(id, name) {
             document.getElementById('loadingStatus').style.display = 'block';
-            if (navigator.vibrate) navigator.vibrate(100); // 成功短震動
+            if (navigator.vibrate) navigator.vibrate(100); 
 
             const uploadUrl = `${GAS_URL}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 
@@ -310,27 +313,25 @@
             .then(() => {
                 document.getElementById('loadingStatus').style.display = 'none';
                 
-                // 💡 寫入手機內存，防止等一下重複簽到
                 let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
                 checkedRecords.push(id);
                 localStorage.setItem("checked_employees", JSON.stringify(checkedRecords));
 
                 setTimeout(() => {
-                    alert(`🟢 簽到成功！\n姓名：${name}\n數據已即時同步到 Google Excel。`);
-                    resumeScanner();
-                }, 100);
+                    alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功寫入 Google 試算表。`);
+                    isProcessing = false; // 解鎖
+                }, 50);
             })
             .catch(err => {
                 console.error(err);
-                alert("網路異常，寫入 Google 失敗。");
-                resumeScanner();
+                alert("網路異常，寫入失敗。");
+                isProcessing = false; 
             });
         }
 
-        // 供管理員重置快取紀錄用的按鈕
         function clearRecords() {
             localStorage.removeItem("checked_employees");
-            alert("🧹 已清空今日手機簽到暫存紀錄！可以重新測試重複簽到功能。");
+            alert("🧹 紀錄已清除！可以重新測試重複簽到。");
         }
 
         window.onload = generateUserQR;
