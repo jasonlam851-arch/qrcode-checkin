@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>聯動簽到系統</title>
-    <!-- 引入專業庫：ZXing(高效掃描), QRCode(生成) -->
-    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+    <title>極速智慧簽到系統</title>
+    <!-- 🚀 升級：引入全球最強、最靈敏的手機解碼庫 Html5Qrcode -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
@@ -14,8 +14,7 @@
             --bg: #f8fafc; 
             --card-bg: #ffffff; 
             --text: #0f172a; 
-            --accent: #3b82f6; 
-            --error: #ef4444; /* 錯誤提示紅 */
+            --accent: #2563eb; 
         }
         
         body { 
@@ -23,7 +22,7 @@
             background: var(--bg); 
             color: var(--text); 
             margin: 0; 
-            padding: 20px; 
+            padding: 16px; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
@@ -35,107 +34,97 @@
             width: 100%; 
             max-width: 440px; 
             background: var(--card-bg); 
-            border-radius: 28px; 
-            padding: 30px 24px; 
-            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.06); 
+            border-radius: 30px; 
+            padding: 24px; 
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.04); 
             text-align: center; 
         }
         
         .nav-tabs { 
             display: flex; 
             background: #f1f5f9; 
-            padding: 6px; 
-            border-radius: 16px; 
-            margin-bottom: 28px; 
+            padding: 4px; 
+            border-radius: 14px; 
+            margin-bottom: 24px; 
         }
         .nav-btn { 
             flex: 1; 
             border: none; 
             background: transparent; 
             color: #64748b; 
-            padding: 14px; 
+            padding: 12px; 
             font-weight: 600; 
             cursor: pointer; 
-            border-radius: 12px; 
+            border-radius: 10px; 
             font-size: 14px; 
-            transition: all 0.25s ease;
+            transition: all 0.2s;
         }
         .nav-btn.active { 
             background: white; 
             color: var(--text); 
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
         }
         
         .panel { display: none; } 
-        .panel.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .panel.active { display: block; }
         
-        h3 { font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 8px; color: var(--text); }
-        p { color: #64748b; font-size: 14px; margin-top: 0; margin-bottom: 20px; }
+        h3 { font-size: 19px; font-weight: 700; margin: 0 0 6px 0; }
+        p { color: #64748b; font-size: 13px; margin: 0 0 20px 0; }
         
         select { 
             width: 100%; 
             padding: 14px; 
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
-            color: var(--text); 
-            border-radius: 14px; 
+            border-radius: 12px; 
             font-size: 16px; 
-            margin-bottom: 20px; 
+            margin-bottom: 16px; 
             outline: none;
-            cursor: pointer;
         }
         
         .qr-box { 
             background: #f8fafc; 
-            padding: 24px; 
-            border-radius: 20px; 
+            padding: 20px; 
+            border-radius: 16px; 
             display: inline-block; 
-            margin-bottom: 10px; 
             border: 1px solid #f1f5f9; 
         }
         
-        /* 📷 移除任何線條與框架的極簡正方形遮罩 */
+        /* 📷 像 iPhone 原生相機一樣高質感的滿版極简設計 */
         .scanner-view { 
             position: relative; 
             width: 100%; 
-            padding-top: 100%; 
-            background: #090d16; 
-            border-radius: 24px; 
+            padding-top: 100%; /* 1:1 正方形 */
+            background: #000; 
+            border-radius: 20px; 
             overflow: hidden; 
-            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
         }
         
+        /* 讓相機視窗完全填滿 */
         #preview { 
             position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
+            top: 0; left: 0; 
+            width: 100% !important; 
+            height: 100% !important; 
+            object-fit: cover !important; 
         }
+        #preview video { object-fit: cover !important; }
         
         .overlay { 
             position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; justify-content: center; align-items: center; 
             pointer-events: none; 
+            z-index: 10;
         }
         
-        /* 💡 完美的正方形挖空：無線條、無框架，全靠四周深色半透明陰影自然形成正方形 */
+        /* ✨ iPhone 風格：純白色、極簡、微圓角的瞄準框 */
         .box { 
-            width: 65%; 
-            height: 65%; 
-            position: relative; 
-            background: transparent;
-            box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65); 
-            border-radius: 16px; /* 微圓角讓挖空的正方形更精緻 */
-            transition: all 0.3s ease;
+            width: 60%; 
+            height: 60%; 
+            border: 2px solid rgba(255, 255, 255, 0.8); 
+            border-radius: 16px; 
+            box-shadow: 0 0 0 400px rgba(0, 0, 0, 0.35); /* 輕量柔和的半透明背景 */
         }
         
         .loading { 
@@ -144,6 +133,11 @@
             font-weight: 600; 
             margin-top: 16px; 
             font-size: 14px;
+        }
+        
+        /* 管理功能：清除今日簽到快取（測試用） */
+        .clear-btn {
+            background: none; border: none; color: #94a3b8; font-size: 11px; margin-top: 15px; cursor: pointer; text-decoration: underline;
         }
     </style>
 </head>
@@ -155,7 +149,7 @@
             <button class="nav-btn" onclick="switchMode('scanner')">📷 管理員掃描</button>
         </div>
 
-        <!-- 面板 A：員工端 -->
+        <!-- 面板 A -->
         <div id="displayPanel" class="panel active">
             <h3>請選擇您的身分</h3>
             <p>出示下方 QR Code 即可進行簽到</p>
@@ -167,22 +161,22 @@
             <div class="qr-box"><div id="qrcode"></div></div>
         </div>
 
-        <!-- 面板 B：管理員端 -->
+        <!-- 面板 B -->
         <div id="scannerPanel" class="panel">
-            <h3>對準正方形區域進行掃描</h3>
-            <p>系統將自動過濾無效的二維碼</p>
+            <h3>將二維碼放入框內</h3>
+            <p>新版高感度引擎：支援微小、快速掃描</p>
             <div class="scanner-view">
-                <video id="preview"></video>
+                <div id="preview"></div>
                 <div class="overlay">
                     <div class="box"></div>
                 </div>
             </div>
-            <div id="loadingStatus" class="loading">⏳ 正在即時寫入 Google 試算表...</div>
+            <div id="loadingStatus" class="loading">⏳ 正在同步寫入 Google Excel...</div>
+            <button class="clear-btn" onclick="clearRecords()">重置今日簽到紀錄 (測試用)</button>
         </div>
     </div>
 
     <script>
-        // 內部合法員工名單
         const employees = {
             "EMP_001": "張小明",
             "EMP_002": "李美玲",
@@ -191,9 +185,8 @@
 
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyM4gOAFtIAW3ihSjdL-Q9vfZEAJECvAE3CjQ8P5tK9yEKoTTcqOPrUwh0yFMv-JZh9AQ/exec";
 
-        let codeReader = null;
-        let isSending = false; 
-        let currentCameraId = null;
+        let html5QrcodeScanner = null;
+        let isProcessing = false;
 
         function switchMode(mode) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -206,7 +199,7 @@
             } else {
                 document.querySelectorAll('.nav-btn')[1].classList.add('active');
                 document.getElementById('scannerPanel').classList.add('active');
-                startRearScanner(); 
+                startAdvancedScanner(); 
             }
         }
 
@@ -223,90 +216,90 @@
             });
         }
 
-        function stopScanner() {
-            if (codeReader) {
-                codeReader.reset();
-                codeReader = null;
+        // 停止新版掃描器
+        async function stopScanner() {
+            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                await html5QrcodeScanner.stop();
             }
-            isSending = false;
+            html5QrcodeScanner = null;
+            isProcessing = false;
             document.getElementById('loadingStatus').style.display = 'none';
         }
 
-        async function startRearScanner() {
-            if (codeReader) stopScanner(); 
+        // 啟動超強性能新相機
+        async function startAdvancedScanner() {
+            if (html5QrcodeScanner) await stopScanner();
             
-            codeReader = new ZXing.BrowserQRCodeReader();
+            // 實例化新引擎
+            html5QrcodeScanner = new Html5Qrcode("preview");
+            
+            const config = {
+                fps: 20,                  // 每秒解碼 20 次，極速捕捉
+                qrbox: function(vw, vh) { // 動態計算瞄準框
+                    const size = Math.min(vw, vh) * 0.65;
+                    return { width: size, height: size };
+                },
+                aspectRatio: 1.0          // 強制 1:1 畫面不拉伸歪斜
+            };
+
             try {
-                const videoDevices = await codeReader.getVideoInputDevices();
-                if (videoDevices.length === 0) { alert("找不到相機"); return; }
-
-                currentCameraId = videoDevices[videoDevices.length - 1].deviceId;
-                for (const device of videoDevices) {
-                    const label = device.label.toLowerCase();
-                    if (label.includes('back') || label.includes('rear') || label.includes('後置') || label.includes('環境')) {
-                        currentCameraId = device.deviceId;
-                        break;
-                    }
+                // 強制調用後置主鏡頭
+                await html5QrcodeScanner.start(
+                    { facingMode: "environment" }, 
+                    config,
+                    onScanSuccess
+                );
+            } catch (err) {
+                console.error("無法開啟後鏡頭，嘗試預設相機:", err);
+                try {
+                    await html5QrcodeScanner.start({ facingMode: "user" }, config, onScanSuccess);
+                } catch(e) {
+                    alert("無法啟動相機權限，請確認瀏覽器隱私設定。");
                 }
-
-                const constraints = {
-                    video: {
-                        deviceId: { exact: currentCameraId },
-                        facingMode: "environment" 
-                    }
-                };
-
-                decodeContinuously(constraints);
-            } catch (error) {
-                console.error(error);
-                decodeContinuously(undefined);
             }
         }
 
-        function decodeContinuously(constraints) {
-            if (!codeReader) return;
+        // 當新引擎成功抓到任何二維碼時（無論對錯，100% 觸發）
+        async function onScanSuccess(decodedText) {
+            if (isProcessing) return; // 防禦機制：正在處理中就無視
+            isProcessing = true;
             
-            codeReader.decodeFromConstraints(constraints, 'preview', (result, err) => {
-                if (result && !isSending) {
-                    const scannedId = result.text;
-                    
-                    // 🔒 觸發安全鎖，先停止解碼運算
-                    isSending = true; 
-                    if (codeReader) codeReader.reset(); 
+            // 暫停相機解碼，畫面不卡死
+            if (html5QrcodeScanner) await html5QrcodeScanner.pause();
 
-                    // 🔍 判斷是否為系統合法的員工工號
-                    if (employees[scannedId]) {
-                        // 正確的二維碼：開始寫入 Excel
-                        sendToGoogleSheets(scannedId, employees[scannedId]);
-                    } else {
-                        // ❌ 錯誤的二維碼：跳出無效提示
-                        handleInvalidQR(scannedId);
-                    }
-                }
-                if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.log("ZXing error ignored");
-                }
-            });
+            // 1. 讀取手機本地紀錄，檢查是否已經簽到過
+            let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
+
+            // 2. 判斷是否為無效的二維碼
+            if (!employees[decodedText]) {
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // 錯誤震動
+                alert(`❌ 該二維碼無效！\n\n內容："${decodedText}"\n不屬於本公司員工名冊。`);
+                resumeScanner();
+                return;
+            }
+
+            // 3. 判斷是否「重複簽到」
+            if (checkedRecords.includes(decodedText)) {
+                if (navigator.vibrate) navigator.vibrate([200]); 
+                alert(`⚠️ 提示：【${employees[decodedText]}】今天已經簽到過了，請勿重複掃描！`);
+                resumeScanner();
+                return;
+            }
+
+            // 4. 通過以上驗證，確認是「初次簽到成功」的合法員工 ➔ 發送到 Google
+            sendToGoogleSheets(decodedText, employees[decodedText]);
         }
 
-        // ❌ 處理無效二維碼的函數
-        function handleInvalidQR(wrongData) {
-            // 手機兩下短震動提示錯誤
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
-            
-            setTimeout(() => {
-                alert(`❌ 該二維碼無效！\n\n偵測到內容為："${wrongData}"\n此內容不在員工名冊中，無法辦理簽到。`);
-                
-                // 點擊確認後，重置狀態並重新啟動掃描器
-                isSending = false;
-                startRearScanner();
-            }, 100);
+        // 讓相機恢復運作的輔助函數
+        function resumeScanner() {
+            isProcessing = false;
+            if (html5QrcodeScanner) html5QrcodeScanner.resume();
         }
 
-        // 🟢 處理正確二維碼發送
+        // 發送數據到 Google Excel 
         function sendToGoogleSheets(id, name) {
             document.getElementById('loadingStatus').style.display = 'block';
-            if (navigator.vibrate) navigator.vibrate(100); // 成功震動一下
+            if (navigator.vibrate) navigator.vibrate(100); // 成功短震動
 
             const uploadUrl = `${GAS_URL}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 
@@ -317,18 +310,27 @@
             .then(() => {
                 document.getElementById('loadingStatus').style.display = 'none';
                 
+                // 💡 寫入手機內存，防止等一下重複簽到
+                let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
+                checkedRecords.push(id);
+                localStorage.setItem("checked_employees", JSON.stringify(checkedRecords));
+
                 setTimeout(() => {
-                    alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功發送。`);
-                    isSending = false;
-                    startRearScanner(); 
+                    alert(`🟢 簽到成功！\n姓名：${name}\n數據已即時同步到 Google Excel。`);
+                    resumeScanner();
                 }, 100);
             })
             .catch(err => {
                 console.error(err);
-                alert("寫入 Google 失敗，請檢查網路或 GAS 權限。");
-                isSending = false;
-                startRearScanner();
+                alert("網路異常，寫入 Google 失敗。");
+                resumeScanner();
             });
+        }
+
+        // 供管理員重置快取紀錄用的按鈕
+        function clearRecords() {
+            localStorage.removeItem("checked_employees");
+            alert("🧹 已清空今日手機簽到暫存紀錄！可以重新測試重複簽到功能。");
         }
 
         window.onload = generateUserQR;
