@@ -91,11 +91,11 @@
             border: 1px solid #f1f5f9; 
         }
         
-        /* 📷 優化框架過高問題：調整高度比例 */
+        /* 📷 舒適的掃描窗高度（不頂天立地、不壓迫） */
         .scanner-view { 
             position: relative; 
             width: 100%; 
-            padding-top: 85%; /* 從原本的 100% 縮減到 85%，降低整體掃描窗高度 */
+            padding-top: 85%; 
             background: #000; 
             border-radius: 20px; 
             overflow: hidden; 
@@ -118,13 +118,13 @@
             z-index: 10;
         }
         
-        /* ✨ 配合高度調整瞄準框 */
+        /* ✨ 完美比例的極簡圓角瞄準框 */
         .box { 
-            width: 60%; 
-            height: 70%; /* 拉長一點配合 85% 的長寬比 */
+            width: 65%; 
+            height: 75%; 
             border: 2px solid rgba(255, 255, 255, 0.85); 
             border-radius: 16px; 
-            box-shadow: 0 0 0 400px rgba(0, 0, 0, 0.4); 
+            box-shadow: 0 0 0 500px rgba(0, 0, 0, 0.45); 
         }
         
         .loading { 
@@ -184,7 +184,7 @@
             
             <div class="footer-info">
                 <button class="clear-btn" onclick="clearRecords()">重置今日紀錄 (測試用)</button>
-                <span class="version-tag">v2.1.0-Build2026</span>
+                <span class="version-tag">v2.1.1-Build2026</span>
             </div>
         </div>
     </div>
@@ -243,8 +243,10 @@
             
             html5QrcodeScanner = new Html5Qrcode("preview");
             
+            // 🛠️ 修正 1：重新補上 aspectRatio: 1.0，配合 CSS 的高度，防止某些安卓手機鏡頭拉伸變形
             const config = {
-                fps: 25, // 提高到 25 影格，捕捉速度更快
+                fps: 25, 
+                aspectRatio: 1.0,
                 qrbox: function(vw, vh) {
                     const size = Math.min(vw, vh) * 0.65;
                     return { width: size, height: size };
@@ -267,21 +269,25 @@
             }
         }
 
-        // 🟢 核心修正：取消暫停視訊，完全靠背景 isProcessing 鎖定
         function onScanSuccess(decodedText) {
+            // 🛠️ 修正 2：第一時間做毫秒級防禦，徹底杜絕多個相同訊號穿透
             if (isProcessing) return; 
-            isProcessing = true; // 鎖定背景，防止重複彈出
+            isProcessing = true; 
 
-            let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
+            let checkedRecords = [];
+            try {
+                checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
+            } catch (e) {
+                console.error("讀取本地儲存失敗", e);
+            }
 
             // 1. 驗證是否為無效二維碼
             if (!employees[decodedText]) {
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
                 
-                // 💡 延遲一下跳出，確保 alert 不會卡死瀏覽器線程
                 setTimeout(() => {
                     alert(`❌ 該二維碼無效！\n\n內容："${decodedText}"\n非系統認證的員工工號。`);
-                    isProcessing = false; // 按下確認後，背景秒解鎖，相機本來就是動的，立刻能重掃
+                    isProcessing = false; 
                 }, 50);
                 return;
             }
@@ -313,13 +319,18 @@
             .then(() => {
                 document.getElementById('loadingStatus').style.display = 'none';
                 
-                let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
-                checkedRecords.push(id);
-                localStorage.setItem("checked_employees", JSON.stringify(checkedRecords));
+                // 🛠️ 修正 3：加入 try-catch 區塊，確保即使 localStorage 滿了拋錯，系統也能成功解鎖
+                try {
+                    let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
+                    checkedRecords.push(id);
+                    localStorage.setItem("checked_employees", JSON.stringify(checkedRecords));
+                } catch (e) {
+                    console.error("寫入本地儲存失敗", e);
+                }
 
                 setTimeout(() => {
                     alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功寫入 Google 試算表。`);
-                    isProcessing = false; // 解鎖
+                    isProcessing = false; 
                 }, 50);
             })
             .catch(err => {
