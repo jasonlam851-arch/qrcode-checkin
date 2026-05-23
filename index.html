@@ -39,7 +39,7 @@
             <button class="nav-btn" onclick="switchMode('scanner')">📷 管理員手機掃描</button>
         </div>
 
-        <!-- 面板 A：員工端（生成含有 ID 的 QR Code） -->
+        <!-- 面板 A：員工端 -->
         <div id="displayPanel" class="panel active">
             <h3 style="color: #107c41;">請選擇您的身分</h3>
             <select id="userSelect" onchange="generateUserQR()">
@@ -53,7 +53,7 @@
 
         <!-- 面板 B：管理員端 -->
         <div id="scannerPanel" class="panel">
-            <h3 style="color: #107c41;">管理員掃描端 (已鎖定後鏡頭)</h3>
+            <h3 style="color: #107c41;">管理員掃描端 (流暢防卡版)</h3>
             <div class="scanner-view">
                 <video id="preview"></video>
                 <div class="overlay"><div class="box"><div class="laser"></div></div></div>
@@ -63,18 +63,18 @@
     </div>
 
     <script>
-        // 內部員工名冊對照表
         const employees = {
             "EMP_001": "張小明",
             "EMP_002": "李美玲",
             "EMP_003": "王大同"
         };
 
-        // 📌 已經為您填入您的 Google GAS 專屬網址
+        // 📌 您的 Google GAS 專屬網址
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyM4gOAFtIAW3ihSjdL-Q9vfZEAJECvAE3CjQ8P5tK9yEKoTTcqOPrUwh0yFMv-JZh9AQ/exec";
 
         let codeReader = null;
         let isSending = false; 
+        let currentCameraId = null;
 
         function switchMode(mode) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -83,7 +83,7 @@
             if (mode === 'display') {
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
                 document.getElementById('displayPanel').classList.add('active');
-                if (codeReader) { codeReader.reset(); codeReader = null; }
+                stopScanner();
             } else {
                 document.querySelectorAll('.nav-btn')[1].classList.add('active');
                 document.getElementById('scannerPanel').classList.add('active');
@@ -103,74 +103,109 @@
             });
         }
 
-        // 啟動專門鎖定「後置主鏡頭」的掃描器
+        // 停止掃描器並釋放鏡頭資源（防卡死關鍵）
+        function stopScanner() {
+            if (codeReader) {
+                codeReader.reset();
+                codeReader = null;
+            }
+            isSending = false;
+            document.getElementById('loadingStatus').style.display = 'none';
+        }
+
+        // 啟動主鏡頭掃描
         async function startRearScanner() {
+            if (codeReader) stopScanner(); // 啟動前先乾淨重置
+            
             codeReader = new ZXing.BrowserQRCodeReader();
             try {
                 const videoDevices = await codeReader.getVideoInputDevices();
                 if (videoDevices.length === 0) { alert("找不到相機"); return; }
 
-                // 強制挑選後鏡頭
-                let rearCameraId = videoDevices[videoDevices.length - 1].deviceId;
+                // 尋找後置鏡頭
+                currentCameraId = videoDevices[videoDevices.length - 1].deviceId;
                 for (const device of videoDevices) {
                     const label = device.label.toLowerCase();
                     if (label.includes('back') || label.includes('rear') || label.includes('後置') || label.includes('環境')) {
-                        rearCameraId = device.deviceId;
+                        currentCameraId = device.deviceId;
                         break;
                     }
                 }
 
                 const constraints = {
                     video: {
-                        deviceId: { exact: rearCameraId },
+                        deviceId: { exact: currentCameraId },
                         facingMode: "environment" 
                     }
                 };
 
-                codeReader.decodeFromConstraints(constraints, 'preview', (result, err) => {
-                    if (result && !isSending) {
-                        const scannedId = result.text;
-                        if (employees[scannedId]) {
-                            sendToGoogleSheets(scannedId, employees[scannedId]);
-                        }
-                    }
-                });
+                // 開始監聽解碼
+                decodeContinuously(constraints);
+
             } catch (error) {
-                console.error(error);
-                codeReader.decodeFromVideoDevice(undefined, 'preview', (result) => {
-                    if (result && employees[result.text] && !isSending) {
-                        sendToGoogleSheets(result.text, employees[result.text]);
-                    }
-                });
+                console.error("相機啟動失敗，嘗試預設模式:", error);
+                // 備用方案：不指定特定鏡頭直接啟動
+                decodeContinuously(undefined);
             }
         }
 
-        // 將數據發送到 Google Excel 試算表
+        // 獨立出解碼迴圈，方便被重複呼叫重啟
+        function decodeContinuously(constraints) {
+            if (!codeReader) return;
+            
+            codeReader.decodeFromConstraints(constraints, 'preview', (result, err) => {
+                if (result && !isSending) {
+                    const scannedId = result.text;
+                    if (employees[scannedId]) {
+                        // 🟢 1. 成功掃到，立刻將狀態鎖定，防止重複觸發
+                        isSending = true; 
+                        
+                        // 🟢 2. 暫停鏡頭解碼，讓畫面放鬆，防止背景程式卡死
+                        if (codeReader) codeReader.reset(); 
+                        
+                        // 🟢 3. 執行發送
+                        sendToGoogleSheets(scannedId, employees[scannedId]);
+                    }
+                }
+                // 忽略日常沒掃到 QR 碼時的微小報錯，避免 console 塞滿導致效能變慢
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.log("ZXing 微小異常，已自動忽略");
+                }
+            });
+        }
+
+        // 將數據發送到 Google Excel 試算表（優化發送與重啟相機邏輯）
         function sendToGoogleSheets(id, name) {
-            isSending = true;
             document.getElementById('loadingStatus').style.display = 'block';
 
             if (navigator.vibrate) navigator.vibrate(100); 
 
-            // 發送 POST 請求到 Google GAS
-            fetch(GAS_URL, {
+            // 將資料直接帶在網址後面，解決 no-cors 讀不到 Body 的問題
+            const uploadUrl = `${GAS_URL}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+
+            fetch(uploadUrl, {
                 method: "POST",
-                mode: "no-cors", 
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: id, name: name })
+                mode: "no-cors" 
             })
             .then(() => {
                 document.getElementById('loadingStatus').style.display = 'none';
-                alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功寫入 Google Excel。`);
                 
-                // 延遲 2.5 秒解鎖，防止重刷
-                setTimeout(() => { isSending = false; }, 2500);
+                // 用 setTimeout 稍微延遲彈窗，給系統緩衝時間
+                setTimeout(() => {
+                    alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功發送。`);
+                    
+                    // 點擊確認關閉 Alert 後，重新初始化相機，畫面就不會撠住！
+                    isSending = false;
+                    startRearScanner(); 
+                }, 100);
             })
             .catch(err => {
                 console.error(err);
-                alert("寫入 Google 失敗，請檢查 GAS 網址與權限設定。");
+                alert("寫入 Google 失敗，請檢查網路或 GAS 權限。");
+                
+                // 失敗了也要記得重啟相機
                 isSending = false;
-                document.getElementById('loadingStatus').style.display = 'none';
+                startRearScanner();
             });
         }
 
