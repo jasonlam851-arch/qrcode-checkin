@@ -3,85 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>跨裝置雲端同步簽到系統</title>
-    <!-- 引入外部專業庫：Firebase(雲端同步), ZXing(高效掃描), QRCode(生成) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <title>Google 試算表聯動簽到系統</title>
+    <!-- 引入專業庫：ZXing(高效掃描), QRCode(生成) -->
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
-        :root { --primary: #2563eb; --bg: #0f172a; --card-bg: #1e293b; --success: #10b981; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
-        .container { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .nav-tabs { display: flex; background: rgba(15,23,42,0.6); padding: 5px; border-radius: 12px; margin-bottom: 20px; }
-        .nav-btn { flex: 1; border: none; background: transparent; color: #94a3b8; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 14px; }
-        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        :root { --primary: #107c41; --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .container { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 25px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); text-align: center; border: 1px solid rgba(0,0,0,0.05); }
+        .nav-tabs { display: flex; background: #e5e7eb; padding: 5px; border-radius: 12px; margin-bottom: 20px; }
+        .nav-btn { flex: 1; border: none; background: transparent; color: #4b5563; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 14px; }
+        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(16,124,65,0.2); }
         .panel { display: none; } .panel.active { display: block; }
         
-        /* 電腦端/展示端 */
-        select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; font-size: 16px; margin-bottom: 15px; }
-        .qr-box { background: white; padding: 15px; border-radius: 12px; display: inline-block; margin: 10px 0; }
-        .status-window { margin-top: 15px; padding: 15px; background: #0f172a; border-radius: 10px; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        select { width: 100%; padding: 12px; background: #f9fafb; border: 1px solid #d1d5db; color: var(--text); border-radius: 10px; font-size: 16px; margin-bottom: 15px; }
+        .qr-box { background: white; padding: 15px; border-radius: 12px; display: inline-block; margin: 10px 0; border: 1px solid #e5e7eb; }
         
-        /* 手機管理員端 */
+        /* 手機管理員端 (強制後置鏡頭) */
         .scanner-view { position: relative; width: 100%; padding-top: 100%; background: #000; border-radius: 14px; overflow: hidden; }
         #preview { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; }
         .overlay { position: absolute; top:0; left:0; width:100%; height:100%; box-shadow: inset 0 0 0 40px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; pointer-events: none; }
-        .box { width: 65%; height: 65%; border: 2px dashed #38bdf8; position: relative; }
-        .laser { position: absolute; width: 100%; height: 2px; background: #38bdf8; top: 0; animation: scan 2s linear infinite; box-shadow: 0 0 8px #38bdf8; }
+        .box { width: 65%; height: 65%; border: 2px dashed #107c41; position: relative; }
+        .laser { position: absolute; width: 100%; height: 2px; background: #107c41; top: 0; animation: scan 2s linear infinite; box-shadow: 0 0 8px #107c41; }
         @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        
+        .loading { display: none; color: #107c41; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="nav-tabs">
-            <button class="nav-btn active" onclick="switchMode('display')">🖥️ 電腦/用戶端 (顯示QR)</button>
-            <button class="nav-btn" onclick="switchMode('scanner')">📱 手機/管理員 (掃描端)</button>
+            <button class="nav-btn active" onclick="switchMode('display')">👤 員工出示 QR Code</button>
+            <button class="nav-btn" onclick="switchMode('scanner')">📷 管理員手機掃描</button>
         </div>
 
-        <!-- 面板 A：電腦/用戶端（秀出QR碼，並等待手機來掃） -->
+        <!-- 面板 A：員工端（生成含有 ID 的 QR Code） -->
         <div id="displayPanel" class="panel active">
-            <h3>請選擇身分並在螢幕上出示</h3>
+            <h3 style="color: #107c41;">請選擇您的身分</h3>
             <select id="userSelect" onchange="generateUserQR()">
-                <option value="EMP_A">高級工程師 - 張小明</option>
-                <option value="EMP_B">專案經理 - 李美玲</option>
-                <option value="EMP_C">營運總監 - 王大同</option>
+                <option value="EMP_001">張小明 (EMP_001)</option>
+                <option value="EMP_002">李美玲 (EMP_002)</option>
+                <option value="EMP_003">王大同 (EMP_003)</option>
             </select>
             <div class="qr-box"><div id="qrcode"></div></div>
-            
-            <div class="status-window" id="syncStatus">
-                ⏳ 等待管理員手機掃描感應...
-            </div>
+            <p style="color: #6b7280; font-size: 13px;">管理員掃描後，數據將即時寫入 Google Excel</p>
         </div>
 
-        <!-- 面板 B：管理員端（強制開啟後鏡頭掃描） -->
+        <!-- 面板 B：管理員端 -->
         <div id="scannerPanel" class="panel">
-            <h3>管理員控制台 (後鏡頭)</h3>
+            <h3 style="color: #107c41;">管理員掃描端 (已鎖定後鏡頭)</h3>
             <div class="scanner-view">
                 <video id="preview"></video>
                 <div class="overlay"><div class="box"><div class="laser"></div></div></div>
             </div>
-            <p style="color: #94a3b8; font-size: 13px; margin-top: 10px;">系統已強制請求後置主鏡頭</p>
+            <div id="loadingStatus" class="loading">⏳ 正在同步寫入 Google 試算表...</div>
         </div>
     </div>
 
     <script>
-        // 模擬名冊
-        const employees = { "EMP_A": "張小明", "EMP_B": "李美玲", "EMP_C": "王大同" };
-
-        // --- 🔴 免費公共 Firebase 臨時資料庫初始化 ---
-        // (注意：此為公開測試庫，實務生產環境建議替換成您自己的隱私金鑰)
-        const firebaseConfig = {
-            databaseURL: "https://html-signin-default-rtdb.firebaseio.com/"
+        // 內部員工名冊對照表
+        const employees = {
+            "EMP_001": "張小明",
+            "EMP_002": "李美玲",
+            "EMP_003": "王大同"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+
+        // 📌 已經為您填入您的 Google GAS 專屬網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyM4gOAFtIAW3ihSjdL-Q9vfZEAJECvAE3CjQ8P5tK9yEKoTTcqOPrUwh0yFMv-JZh9AQ/exec";
 
         let codeReader = null;
+        let isSending = false; 
 
-        // --- 1. 頁面模式切換 ---
         function switchMode(mode) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -90,129 +84,97 @@
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
                 document.getElementById('displayPanel').classList.add('active');
                 if (codeReader) { codeReader.reset(); codeReader = null; }
-                listenToCloudSync(); // 電腦端開啟雲端監聽
             } else {
                 document.querySelectorAll('.nav-btn')[1].classList.add('active');
                 document.getElementById('scannerPanel').classList.add('active');
-                db.ref('currentCheckIn').off(); // 關閉監聽以省效能
-                startRearScanner(); // 手機端啟動相機
+                startRearScanner(); 
             }
         }
 
-        // --- 2. 電腦端：生成二維碼與「即時雲端監聽」 ---
+        // 生成 QR Code
         function generateUserQR() {
             const empId = document.getElementById('userSelect').value;
             document.getElementById('qrcode').innerHTML = "";
-            
-            // 重設本機畫面提示
-            document.getElementById('syncStatus').style.background = "#0f172a";
-            document.getElementById('syncStatus').innerText = "⏳ 等待管理員手機掃描感應...";
-
             new QRCode(document.getElementById("qrcode"), {
-                text: empId, // 內容直接放 ID
+                text: empId,
                 width: 200,
                 height: 200,
                 correctLevel : QRCode.CorrectLevel.H
             });
         }
 
-        // 【核心】讓電腦網頁即時監聽雲端資料庫的變化
-        function listenToCloudSync() {
-            const empId = document.getElementById('userSelect').value;
-            
-            // 監聽雲端資料庫中 'currentCheckIn' 節點
-            db.ref('currentCheckIn').on('value', (snapshot) => {
-                const data = snapshot.val();
-                // 如果雲端傳來的 ID 剛好等於目前電腦畫面上選取的 ID
-                if (data && data.id === empId && data.status === "SUCCESS") {
-                    
-                    // 電腦網頁立刻產生感應！
-                    const statusWin = document.getElementById('syncStatus');
-                    statusWin.style.background = "#10b981";
-                    statusWin.innerHTML = `🟢 雲端同步成功！${employees[empId]} 已於 ${data.time} 完成簽到！`;
-                    
-                    if (navigator.vibrate) navigator.vibrate(200);
-                }
-            });
-        }
-
-        // --- 3. 手機端：【解決前置鏡頭】強制調用後置主鏡頭 ---
+        // 啟動專門鎖定「後置主鏡頭」的掃描器
         async function startRearScanner() {
             codeReader = new ZXing.BrowserQRCodeReader();
-            
             try {
                 const videoDevices = await codeReader.getVideoInputDevices();
                 if (videoDevices.length === 0) { alert("找不到相機"); return; }
 
-                // 📌 核心關鍵：精準鎖定後置鏡頭 (環境鏡頭)
-                let rearCameraId = null;
-                
-                // 方法 A：從裝置名稱標籤篩選
+                // 強制挑選後鏡頭
+                let rearCameraId = videoDevices[videoDevices.length - 1].deviceId;
                 for (const device of videoDevices) {
                     const label = device.label.toLowerCase();
-                    if (label.includes('back') || label.includes('rear') || label.includes('環境') || label.includes('後置')) {
+                    if (label.includes('back') || label.includes('rear') || label.includes('後置') || label.includes('環境')) {
                         rearCameraId = device.deviceId;
                         break;
                     }
                 }
 
-                // 方法 B：如果標籤沒寫，預設選最後一個（大部分手機最後一個是後鏡頭）
-                if (!rearCameraId) {
-                    rearCameraId = videoDevices[videoDevices.length - 1].deviceId;
-                }
-
-                // 📌 核心關鍵二：傳入強制後置的約束條件 (Constraints)
                 const constraints = {
                     video: {
                         deviceId: { exact: rearCameraId },
-                        facingMode: "environment" // 雙重保險，強制調用面向環境的鏡頭
+                        facingMode: "environment" 
                     }
                 };
 
-                // 開始解碼視訊流
                 codeReader.decodeFromConstraints(constraints, 'preview', (result, err) => {
-                    if (result) {
+                    if (result && !isSending) {
                         const scannedId = result.text;
                         if (employees[scannedId]) {
-                            sendSignToCloud(scannedId); // 掃到名單內的人，往雲端送
+                            sendToGoogleSheets(scannedId, employees[scannedId]);
                         }
                     }
                 });
-
             } catch (error) {
                 console.error(error);
-                // 備用方案：如果硬體太舊不支援約束，改用一般啟動
                 codeReader.decodeFromVideoDevice(undefined, 'preview', (result) => {
-                    if (result && employees[result.text]) sendSignToCloud(result.text);
+                    if (result && employees[result.text] && !isSending) {
+                        sendToGoogleSheets(result.text, employees[result.text]);
+                    }
                 });
             }
         }
 
-        // --- 4. 雲端發送聯動 ---
-        let lock = false;
-        function sendSignToCloud(empId) {
-            if (lock) return;
-            lock = true;
+        // 將數據發送到 Google Excel 試算表
+        function sendToGoogleSheets(id, name) {
+            isSending = true;
+            document.getElementById('loadingStatus').style.display = 'block';
 
-            const now = new Date();
-            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            if (navigator.vibrate) navigator.vibrate(100); 
 
-            // ⚡ 將簽到數據寫入 Firebase 雲端廣播機制
-            db.ref('currentCheckIn').set({
-                id: empId,
-                status: "SUCCESS",
-                time: timeStr
-            }).then(() => {
-                alert(`📱 手機回報：${employees[empId]} 簽到資料已同步至雲端！`);
-                setTimeout(() => { lock = false; }, 2000); // 兩秒防重刷鎖
+            // 發送 POST 請求到 Google GAS
+            fetch(GAS_URL, {
+                method: "POST",
+                mode: "no-cors", 
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: id, name: name })
+            })
+            .then(() => {
+                document.getElementById('loadingStatus').style.display = 'none';
+                alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功寫入 Google Excel。`);
+                
+                // 延遲 2.5 秒解鎖，防止重刷
+                setTimeout(() => { isSending = false; }, 2500);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("寫入 Google 失敗，請檢查 GAS 網址與權限設定。");
+                isSending = false;
+                document.getElementById('loadingStatus').style.display = 'none';
             });
         }
 
-        // 初始化
-        window.onload = function() {
-            generateUserQR();
-            listenToCloudSync();
-        };
+        window.onload = generateUserQR;
     </script>
 </body>
 </html>
