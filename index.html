@@ -10,11 +10,12 @@
     
     <style>
         :root { 
-            --primary: #1f2937; /* 改為更有質感的深邃灰黑色 */
+            --primary: #1f2937; 
             --bg: #f8fafc; 
             --card-bg: #ffffff; 
             --text: #0f172a; 
-            --accent: #3b82f6; /* 精緻的科技藍作為亮點 */
+            --accent: #3b82f6; 
+            --error: #ef4444; /* 錯誤提示紅 */
         }
         
         body { 
@@ -40,7 +41,6 @@
             text-align: center; 
         }
         
-        /* 導覽頁籤美化：現代膠囊風格 */
         .nav-tabs { 
             display: flex; 
             background: #f1f5f9; 
@@ -84,7 +84,6 @@
             margin-bottom: 20px; 
             outline: none;
             cursor: pointer;
-            -webkit-appearance: none;
         }
         
         .qr-box { 
@@ -96,11 +95,11 @@
             border: 1px solid #f1f5f9; 
         }
         
-        /* ✨ 精緻高級感掃描端介面 */
+        /* 📷 移除任何線條與框架的極簡正方形遮罩 */
         .scanner-view { 
             position: relative; 
             width: 100%; 
-            padding-top: 100%; /* 1:1 正方形 */
+            padding-top: 100%; 
             background: #090d16; 
             border-radius: 24px; 
             overflow: hidden; 
@@ -116,87 +115,27 @@
             object-fit: cover; 
         }
         
-        /* 高質感半透明黑遮罩 */
         .overlay { 
             position: absolute; 
             top: 0; 
             left: 0; 
             width: 100%; 
             height: 100%; 
-            background: rgba(9, 13, 22, 0.65); 
             display: flex; 
             justify-content: center; 
             align-items: center; 
             pointer-events: none; 
         }
         
-        /* 聚焦掃描框：剔除雜亂綠色，改用極簡幾何線條 */
+        /* 💡 完美的正方形挖空：無線條、無框架，全靠四周深色半透明陰影自然形成正方形 */
         .box { 
             width: 65%; 
             height: 65%; 
             position: relative; 
             background: transparent;
-            box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65); /* 挖空中央效果 */
-            border-radius: 20px;
-            /* 柔和的白色中心框 */
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            /* 呼吸動態光暈，取代舊式雷射線 */
-            animation: breathe 2.5s infinite ease-in-out;
-        }
-        
-        /* 四個角落的高級質感白色邊角邊框 */
-        .box::before, .box::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ffffff;
-            pointer-events: none;
-        }
-        
-        /* 左上與右下角 */
-        .box::before {
-            top: -2px; left: -2px;
-            border-right: none; border-bottom: none;
-            border-top-left-radius: 12px;
-        }
-        /* 右上與左下角 */
-        .box::after {
-            top: -2px; right: -2px;
-            border-left: none; border-bottom: none;
-            border-top-right-radius: 12px;
-        }
-        
-        /* 為另外兩個角手動補齊結構 */
-        .box-corners {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0; left: 0;
-        }
-        .box-corners::before, .box-corners::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ffffff;
-        }
-        .box-corners::before {
-            bottom: -2px; left: -2px;
-            border-right: none; border-top: none;
-            border-bottom-left-radius: 12px;
-        }
-        .box-corners::after {
-            bottom: -2px; right: -2px;
-            border-left: none; border-top: none;
-            border-bottom-right-radius: 12px;
-        }
-
-        /* 呼吸光暈動畫：優雅不刺眼 */
-        @keyframes breathe {
-            0% { box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65), inset 0 0 15px rgba(255,255,255,0.1); }
-            50% { box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65), inset 0 0 30px rgba(59,130,246,0.3); border-color: rgba(255,255,255,0.5); }
-            100% { box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65), inset 0 0 15px rgba(255,255,255,0.1); }
+            box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65); 
+            border-radius: 16px; /* 微圓角讓挖空的正方形更精緻 */
+            transition: all 0.3s ease;
         }
         
         .loading { 
@@ -205,7 +144,6 @@
             font-weight: 600; 
             margin-top: 16px; 
             font-size: 14px;
-            letter-spacing: 0.5px;
         }
     </style>
 </head>
@@ -231,14 +169,12 @@
 
         <!-- 面板 B：管理員端 -->
         <div id="scannerPanel" class="panel">
-            <h3>對準 QR Code 進行掃描</h3>
-            <p>系統將自動偵測並即時寫入 Excel</p>
+            <h3>對準正方形區域進行掃描</h3>
+            <p>系統將自動過濾無效的二維碼</p>
             <div class="scanner-view">
                 <video id="preview"></video>
                 <div class="overlay">
-                    <div class="box">
-                        <div class="box-corners"></div>
-                    </div>
+                    <div class="box"></div>
                 </div>
             </div>
             <div id="loadingStatus" class="loading">⏳ 正在即時寫入 Google 試算表...</div>
@@ -246,13 +182,13 @@
     </div>
 
     <script>
+        // 內部合法員工名單
         const employees = {
             "EMP_001": "張小明",
             "EMP_002": "李美玲",
             "EMP_003": "王大同"
         };
 
-        // 📌 您的 Google GAS 專屬網址
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyM4gOAFtIAW3ihSjdL-Q9vfZEAJECvAE3CjQ8P5tK9yEKoTTcqOPrUwh0yFMv-JZh9AQ/exec";
 
         let codeReader = null;
@@ -333,10 +269,18 @@
             codeReader.decodeFromConstraints(constraints, 'preview', (result, err) => {
                 if (result && !isSending) {
                     const scannedId = result.text;
+                    
+                    // 🔒 觸發安全鎖，先停止解碼運算
+                    isSending = true; 
+                    if (codeReader) codeReader.reset(); 
+
+                    // 🔍 判斷是否為系統合法的員工工號
                     if (employees[scannedId]) {
-                        isSending = true; 
-                        if (codeReader) codeReader.reset(); 
+                        // 正確的二維碼：開始寫入 Excel
                         sendToGoogleSheets(scannedId, employees[scannedId]);
+                    } else {
+                        // ❌ 錯誤的二維碼：跳出無效提示
+                        handleInvalidQR(scannedId);
                     }
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -345,9 +289,24 @@
             });
         }
 
+        // ❌ 處理無效二維碼的函數
+        function handleInvalidQR(wrongData) {
+            // 手機兩下短震動提示錯誤
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
+            
+            setTimeout(() => {
+                alert(`❌ 該二維碼無效！\n\n偵測到內容為："${wrongData}"\n此內容不在員工名冊中，無法辦理簽到。`);
+                
+                // 點擊確認後，重置狀態並重新啟動掃描器
+                isSending = false;
+                startRearScanner();
+            }, 100);
+        }
+
+        // 🟢 處理正確二維碼發送
         function sendToGoogleSheets(id, name) {
             document.getElementById('loadingStatus').style.display = 'block';
-            if (navigator.vibrate) navigator.vibrate(100); 
+            if (navigator.vibrate) navigator.vibrate(100); // 成功震動一下
 
             const uploadUrl = `${GAS_URL}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 
