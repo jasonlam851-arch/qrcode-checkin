@@ -2,160 +2,357 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>快掃式二維碼簽到系統</title>
-    <!-- 引入高畫質 QR Code 生成庫 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>企業級二維碼簽到系統</title>
+    <!-- 引入專業級解碼核心與二維碼生成庫 -->
+    <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f1f5f9;
-            color: #1e293b;
+            background-color: var(--bg);
+            color: #f8fafc;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             justify-content: center;
-        }
-        .container {
-            max-width: 450px;
-            width: 100%;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            align-items: center;
+            min-height: 100vh;
             box-sizing: border-box;
-            text-align: center;
         }
-        h2 { color: #0f172a; margin-top: 0; font-size: 24px; }
+        .system-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-tabs {
+            display: flex;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 6px;
+            margin: 15px;
+            border-radius: 14px;
+        }
+        .nav-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .panel { display: none; padding: 20px; text-align: center; }
+        .panel.active { display: block; }
+
+        /* 使用者 QR 碼介面 */
         select {
             width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
+            padding: 14px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #f8fafc;
+            border-radius: 12px;
             font-size: 16px;
-            background-color: #f8fafc;
+            margin-bottom: 20px;
+            outline: none;
         }
-        #qrcode {
+        .qr-wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            display: inline-block;
+            margin: 10px 0 20px 0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+        .user-tag { font-size: 20px; font-weight: 700; color: #38bdf8; }
+
+        /* 專業掃描器介面 */
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* 1:1 正方形視窗 */
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        #preview {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        /* 高科技掃描框與動態雷射線 */
+        .scan-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 0 40px rgba(0, 0, 0, 0.6);
             display: flex;
             justify-content: center;
-            margin: 25px 0;
-            padding: 20px;
-            background: #ffffff;
-            border: 2px dashed #e2e8f0;
-            border-radius: 16px;
+            align-items: center;
+            pointer-events: none;
         }
-        .user-title { font-weight: bold; font-size: 20px; color: #2563eb; margin-bottom: 5px; }
-        .hint { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+        .scan-box {
+            width: 60%;
+            height: 60%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            box-sizing: border-box;
+        }
+        /* 四個角落的專業對焦邊框 */
+        .scan-box::before, .scan-box::after {
+            content: ''; position: absolute; width: 20px; height: 20px; border-color: #38bdf8; border-style: solid;
+        }
+        .scan-box::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; }
+        .scan-box::after { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; }
+        .scan-corner-topright { position: absolute; top: -2px; right: -2px; width: 20px; height: 20px; border-color: #38bdf8; border-style: solid; border-width: 4px 4px 0 0; }
+        .scan-corner-bottomleft { position: absolute; bottom: -2px; left: -2px; width: 20px; height: 20px; border-color: #38bdf8; border-style: solid; border-width: 0 0 4px 4px; }
         
-        /* 簽到結果彈窗樣式 */
-        .result-box {
-            display: none;
-            padding: 20px;
-            border-radius: 12px;
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
+        /* 動態雷射掃描線 */
+        .laser {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to right, transparent, #38bdf8, transparent);
+            box-shadow: 0 0 8px #38bdf8;
+            top: 0;
+            animation: scan 2s linear infinite;
         }
-        .success { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+        
+        /* 紀錄看板 */
+        .log-container {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .log-title { font-size: 14px; color: #94a3b8; margin-bottom: 8px; font-weight: 600; }
+        .log-list { list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto; }
+        .log-item {
+            background: #0f172a;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            border-left: 4px solid var(--success);
+        }
+
+        /* 簽到成功跳出提示 */
+        .toast {
+            position: fixed;
+            top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: var(--success);
+            color: white; padding: 12px 24px; border-radius: 30px;
+            font-weight: bold; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+            transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            z-index: 999;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- 標題會根據模式自動切換 -->
-        <h2 id="mainTitle">專屬簽到 QR Code</h2>
-        
-        <!-- 模式一：一般使用者畫面（顯示 QR Code） -->
-        <div id="userSection">
-            <label for="userSelect">切換測試帳號：</label>
-            <select id="userSelect" onchange="generateSignUrl()">
-                <option value="USER_001">張小明 (ID: USER_001)</option>
-                <option value="USER_002">李美玲 (ID: USER_002)</option>
-                <option value="USER_003">王大同 (ID: USER_003)</option>
-            </select>
-            
-            <div id="qrcode"></div>
-            <div class="user-title" id="userNameDisplay"></div>
-            <p class="hint">請管理員直接用「手機相機」或「LINE」掃描此碼完成簽到</p>
+    <!-- 成功簽到提示彈窗 -->
+    <div id="toast" class="toast">🟢 簽到成功！</div>
+
+    <div class="system-container">
+        <!-- 頂部切換頁籤 -->
+        <div class="nav-tabs">
+            <button class="nav-btn active" onclick="switchMode('user')">本機憑證 QR</button>
+            <button class="nav-btn" onclick="switchMode('admin')">專業內嵌掃描</button>
         </div>
 
-        <!-- 模式二：管理員掃描後跳轉的結果畫面 -->
-        <div id="resultSection" class="result-box success">
-            <span id="resultMessage"></span>
+        <!-- 區域一：使用者憑證顯示 -->
+        <div id="userPanel" class="panel active">
+            <select id="userSelect" onchange="generateCorporateQR()">
+                <option value="EMP_001">高級工程師 - 張小明</option>
+                <option value="EMP_002">專案經理 - 李美玲</option>
+                <option value="EMP_003">營運總監 - 王大同</option>
+            </select>
+            <div class="qr-wrapper">
+                <div id="qrcode"></div>
+            </div>
+            <div id="userTag" class="user-tag"></div>
+            <p style="color: #64748b; font-size: 13px; margin-top: 5px;">內部系統專屬加密憑證碼</p>
+        </div>
+
+        <!-- 區域二：管理員專業掃描器 -->
+        <div id="adminPanel" class="panel">
+            <div class="scanner-container">
+                <!-- 原生視訊串流 -->
+                <video id="preview"></video>
+                <!-- 高科技覆蓋層 -->
+                <div class="scan-overlay">
+                    <div class="scan-box">
+                        <div class="scan-corner-topright"></div>
+                        <div class="scan-corner-bottomleft"></div>
+                        <div class="laser"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="log-container">
+                <div class="log-title">即時簽到控制台頻道</div>
+                <ul class="log-list" id="logList"></ul>
+            </div>
         </div>
     </div>
 
     <script>
-        // 模擬名冊
-        const userDatabase = {
-            "USER_001": "張小明",
-            "USER_002": "李美玲",
-            "USER_003": "王大同"
+        const employeeDB = {
+            "EMP_001": "張小明",
+            "EMP_002": "李美玲",
+            "EMP_003": "王大同"
         };
+        let checkedInSet = new Set();
+        let codeReader = null;
+        let activeCameraId = null;
 
-        // 獲取目前網頁的基礎網址 (自動適應你的 GitHub Pages 網址)
-        const baseUrl = window.location.origin + window.location.pathname;
+        // --- 1. 初始化與切換邏輯 ---
+        function switchMode(mode) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-        // 1. 【使用者端】生成內嵌網址的二維碼
-        function generateSignUrl() {
-            const userId = document.getElementById('userSelect').value;
-            const userName = userDatabase[userId];
-            
-            document.getElementById('userNameDisplay').innerText = userName;
-            document.getElementById('qrcode').innerHTML = ""; // 刷新清空
-            
-            // 關鍵：將簽到邏輯做成網址參數 (?checkin=用戶ID)
-            const targetUrl = `${baseUrl}?checkin=${userId}`;
-            
-            // 生成高容錯率(H)的二維碼，更好掃
-            new QRCode(document.getElementById("qrcode"), {
-                text: targetUrl,
-                width: 220,
-                height: 220,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-        }
-
-        // 2. 【管理員端】檢查網址裡面有沒有被掃碼帶入的參數
-        function checkUrlParameters() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('checkin'); // 獲取 ?checkin= 後面的字串
-
-            if (userId) {
-                // 如果網址有參數，代表這是管理員「掃碼後跳進來的」
-                document.getElementById('userSection').style.display = 'none'; // 隱藏原本的QR碼畫面
-                document.getElementById('resultSection').style.display = 'block'; // 顯示結果
-                document.getElementById('mainTitle').innerText = '簽到結果報告';
-
-                if (userDatabase[userId]) {
-                    const userName = userDatabase[userId];
-                    const now = new Date();
-                    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-                    
-                    // 顯示簽到成功
-                    document.getElementById('resultMessage').innerHTML = `
-                        <span style="font-size: 50px;">🟢</span><br><br>
-                        ${userName} (${userId})<br>
-                        於 ${timeStr} 簽到成功！
-                    `;
-                } else {
-                    // 錯誤代碼
-                    document.getElementById('resultSection').className = 'result-box';
-                    document.getElementById('resultSection').style.backgroundColor = '#fee2e2';
-                    document.getElementById('resultSection').style.color = '#991b1b';
-                    document.getElementById('resultMessage').innerHTML = `❌ 錯誤：此二維碼無效或帳號不存在。`;
-                }
+            if (mode === 'user') {
+                document.querySelectorAll('.nav-btn')[0].classList.add('active');
+                document.getElementById('userPanel').classList.add('active');
+                stopScanning(); // 關閉相機，釋放硬體資源
             } else {
-                // 如果是一般打開網頁，就正常顯示 QR Code 供人掃描
-                generateSignUrl();
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                document.getElementById('adminPanel').classList.add('active');
+                startScanning(); // 開啟高效能掃描
             }
         }
 
-        // 初始化執行
-        window.onload = checkUrlParameters;
+        // --- 2. 使用者端：生成高品質二維碼 ---
+        function generateCorporateQR() {
+            const empId = document.getElementById('userSelect').value;
+            document.getElementById('userTag').innerText = employeeDB[empId];
+            document.getElementById('qrcode').innerHTML = "";
+
+            new QRCode(document.getElementById("qrcode"), {
+                text: `SIGNIN_VERIFY:${empId}`, // 加入前綴防止誤掃其他無關的條碼
+                width: 200,
+                height: 200,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M // 中等容錯，兼顧讀取速度與圖形精細度
+            });
+        }
+
+        // --- 3. 管理員端：ZXing 高感度解碼引擎 ---
+        async function startScanning() {
+            // 初始化 ZXing 讀碼器
+            codeReader = new ZXing.BrowserQRCodeReader();
+            
+            try {
+                // 獲取所有相機裝置
+                const videoInputDevices = await codeReader.getVideoInputDevices();
+                if (videoInputDevices.length === 0) {
+                    alert("未偵測到任何相機鏡頭。");
+                    return;
+                }
+
+                // 優化策略：優先挑選後置（主）鏡頭，通常解析度與對焦最好
+                let selectedDevice = videoInputDevices[0];
+                for (const device of videoInputDevices) {
+                    const label = device.label.toLowerCase();
+                    if (label.includes('back') || label.includes('rear') || label.includes('環境')) {
+                        selectedDevice = device;
+                        break;
+                    }
+                }
+
+                // 啟動連續解碼流（ZXing 內建防抖與高速連讀演算法）
+                codeReader.decodeFromVideoDevice(selectedDevice.deviceId, 'preview', (result, err) => {
+                    if (result) {
+                        const rawText = result.text;
+                        // 驗證是否為我們系統發出的二維碼
+                        if (rawText.startsWith("SIGNIN_VERIFY:")) {
+                            const empId = rawText.replace("SIGNIN_VERIFY:", "");
+                            processCheckIn(empId);
+                        }
+                    }
+                    // 忽略無解碼結果的微小錯誤(err)，保持鏡頭串流順暢
+                });
+
+            } catch (error) {
+                console.error("相機啟動失敗:", error);
+                alert("相機啟動異常，請確保已開啟 HTTPS 網址與相機授權。");
+            }
+        }
+
+        function stopScanning() {
+            if (codeReader) {
+                codeReader.reset(); // 停止視訊流並關閉鏡頭硬體
+                codeReader = null;
+            }
+        }
+
+        // --- 4. 簽到核心處理邏輯 ---
+        let isProcessing = false; // 防止連續解碼造成的瞬間重複觸發
+        function processCheckIn(empId) {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            if (employeeDB[empId]) {
+                const name = employeeDB[empId];
+
+                if (checkedInSet.has(empId)) {
+                    // 已簽到過，震動提示（如果設備支援）
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    alert(`【${name}】今天已經簽到過了！`);
+                    setTimeout(() => { isProcessing = false; }, 2000); // 兩秒後才允許下一次掃描
+                    return;
+                }
+
+                // 成功簽到邏輯
+                checkedInSet.add(empId);
+                if (navigator.vibrate) navigator.vibrate(150); // 成功短震動
+
+                // 彈出頂部 Professional Toast 提示
+                const toast = document.getElementById('toast');
+                toast.innerText = `🟢 ${name} 簽到成功！`;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2500);
+
+                // 寫入下方即時控制台日誌
+                const now = new Date();
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                const logList = document.getElementById('logList');
+                const li = document.createElement('li');
+                li.className = 'log-item';
+                li.innerHTML = `<span>👤 ${name} (${empId})</span> <span style="color:#64748b;">${timeStr}</span>`;
+                logList.prepend(li);
+            }
+
+            // 1.5 秒延遲鎖，確保管理員有時間把手機移開，不會連續刷同一個人
+            setTimeout(() => { isProcessing = false; }, 1500);
+        }
+
+        window.onload = generateCorporateQR;
     </script>
 </body>
 </html>
