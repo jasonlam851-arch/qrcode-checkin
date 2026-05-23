@@ -3,62 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Google 試算表聯動簽到系統</title>
+    <title>聯動簽到系統</title>
     <!-- 引入專業庫：ZXing(高效掃描), QRCode(生成) -->
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
-        :root { --primary: #107c41; --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
-        .container { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 25px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); text-align: center; border: 1px solid rgba(0,0,0,0.05); }
-        .nav-tabs { display: flex; background: #e5e7eb; padding: 5px; border-radius: 12px; margin-bottom: 20px; }
-        .nav-btn { flex: 1; border: none; background: transparent; color: #4b5563; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 14px; }
-        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(16,124,65,0.2); }
-        .panel { display: none; } .panel.active { display: block; }
+        :root { 
+            --primary: #1f2937; /* 改為更有質感的深邃灰黑色 */
+            --bg: #f8fafc; 
+            --card-bg: #ffffff; 
+            --text: #0f172a; 
+            --accent: #3b82f6; /* 精緻的科技藍作為亮點 */
+        }
         
-        select { width: 100%; padding: 12px; background: #f9fafb; border: 1px solid #d1d5db; color: var(--text); border-radius: 10px; font-size: 16px; margin-bottom: 15px; }
-        .qr-box { background: white; padding: 15px; border-radius: 12px; display: inline-block; margin: 10px 0; border: 1px solid #e5e7eb; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            box-sizing: border-box; 
+        }
         
-        /* 手機管理員端 (強制後置鏡頭) */
-        .scanner-view { position: relative; width: 100%; padding-top: 100%; background: #000; border-radius: 14px; overflow: hidden; }
-        #preview { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; }
-        .overlay { position: absolute; top:0; left:0; width:100%; height:100%; box-shadow: inset 0 0 0 40px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; pointer-events: none; }
-        .box { width: 65%; height: 65%; border: 2px dashed #107c41; position: relative; }
-        .laser { position: absolute; width: 100%; height: 2px; background: #107c41; top: 0; animation: scan 2s linear infinite; box-shadow: 0 0 8px #107c41; }
-        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        .container { 
+            width: 100%; 
+            max-width: 440px; 
+            background: var(--card-bg); 
+            border-radius: 28px; 
+            padding: 30px 24px; 
+            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.06); 
+            text-align: center; 
+        }
         
-        .loading { display: none; color: #107c41; font-weight: bold; margin-top: 10px; }
+        /* 導覽頁籤美化：現代膠囊風格 */
+        .nav-tabs { 
+            display: flex; 
+            background: #f1f5f9; 
+            padding: 6px; 
+            border-radius: 16px; 
+            margin-bottom: 28px; 
+        }
+        .nav-btn { 
+            flex: 1; 
+            border: none; 
+            background: transparent; 
+            color: #64748b; 
+            padding: 14px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border-radius: 12px; 
+            font-size: 14px; 
+            transition: all 0.25s ease;
+        }
+        .nav-btn.active { 
+            background: white; 
+            color: var(--text); 
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); 
+        }
+        
+        .panel { display: none; } 
+        .panel.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        
+        h3 { font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 8px; color: var(--text); }
+        p { color: #64748b; font-size: 14px; margin-top: 0; margin-bottom: 20px; }
+        
+        select { 
+            width: 100%; 
+            padding: 14px; 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            color: var(--text); 
+            border-radius: 14px; 
+            font-size: 16px; 
+            margin-bottom: 20px; 
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+        
+        .qr-box { 
+            background: #f8fafc; 
+            padding: 24px; 
+            border-radius: 20px; 
+            display: inline-block; 
+            margin-bottom: 10px; 
+            border: 1px solid #f1f5f9; 
+        }
+        
+        /* ✨ 精緻高級感掃描端介面 */
+        .scanner-view { 
+            position: relative; 
+            width: 100%; 
+            padding-top: 100%; /* 1:1 正方形 */
+            background: #090d16; 
+            border-radius: 24px; 
+            overflow: hidden; 
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+        }
+        
+        #preview { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+        
+        /* 高質感半透明黑遮罩 */
+        .overlay { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(9, 13, 22, 0.65); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            pointer-events: none; 
+        }
+        
+        /* 聚焦掃描框：剔除雜亂綠色，改用極簡幾何線條 */
+        .box { 
+            width: 65%; 
+            height: 65%; 
+            position: relative; 
+            background: transparent;
+            box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65); /* 挖空中央效果 */
+            border-radius: 20px;
+            /* 柔和的白色中心框 */
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            /* 呼吸動態光暈，取代舊式雷射線 */
+            animation: breathe 2.5s infinite ease-in-out;
+        }
+        
+        /* 四個角落的高級質感白色邊角邊框 */
+        .box::before, .box::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            pointer-events: none;
+        }
+        
+        /* 左上與右下角 */
+        .box::before {
+            top: -2px; left: -2px;
+            border-right: none; border-bottom: none;
+            border-top-left-radius: 12px;
+        }
+        /* 右上與左下角 */
+        .box::after {
+            top: -2px; right: -2px;
+            border-left: none; border-bottom: none;
+            border-top-right-radius: 12px;
+        }
+        
+        /* 為另外兩個角手動補齊結構 */
+        .box-corners {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+        }
+        .box-corners::before, .box-corners::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+        }
+        .box-corners::before {
+            bottom: -2px; left: -2px;
+            border-right: none; border-top: none;
+            border-bottom-left-radius: 12px;
+        }
+        .box-corners::after {
+            bottom: -2px; right: -2px;
+            border-left: none; border-top: none;
+            border-bottom-right-radius: 12px;
+        }
+
+        /* 呼吸光暈動畫：優雅不刺眼 */
+        @keyframes breathe {
+            0% { box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65), inset 0 0 15px rgba(255,255,255,0.1); }
+            50% { box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65), inset 0 0 30px rgba(59,130,246,0.3); border-color: rgba(255,255,255,0.5); }
+            100% { box-shadow: 0 0 0 1000px rgba(9, 13, 22, 0.65), inset 0 0 15px rgba(255,255,255,0.1); }
+        }
+        
+        .loading { 
+            display: none; 
+            color: var(--accent); 
+            font-weight: 600; 
+            margin-top: 16px; 
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="nav-tabs">
-            <button class="nav-btn active" onclick="switchMode('display')">👤 員工出示 QR Code</button>
-            <button class="nav-btn" onclick="switchMode('scanner')">📷 管理員手機掃描</button>
+            <button class="nav-btn active" onclick="switchMode('display')">👤 員工 QR Code</button>
+            <button class="nav-btn" onclick="switchMode('scanner')">📷 管理員掃描</button>
         </div>
 
         <!-- 面板 A：員工端 -->
         <div id="displayPanel" class="panel active">
-            <h3 style="color: #107c41;">請選擇您的身分</h3>
+            <h3>請選擇您的身分</h3>
+            <p>出示下方 QR Code 即可進行簽到</p>
             <select id="userSelect" onchange="generateUserQR()">
                 <option value="EMP_001">張小明 (EMP_001)</option>
                 <option value="EMP_002">李美玲 (EMP_002)</option>
                 <option value="EMP_003">王大同 (EMP_003)</option>
             </select>
             <div class="qr-box"><div id="qrcode"></div></div>
-            <p style="color: #6b7280; font-size: 13px;">管理員掃描後，數據將即時寫入 Google Excel</p>
         </div>
 
         <!-- 面板 B：管理員端 -->
         <div id="scannerPanel" class="panel">
-            <h3 style="color: #107c41;">管理員掃描端 (流暢防卡版)</h3>
+            <h3>對準 QR Code 進行掃描</h3>
+            <p>系統將自動偵測並即時寫入 Excel</p>
             <div class="scanner-view">
                 <video id="preview"></video>
-                <div class="overlay"><div class="box"><div class="laser"></div></div></div>
+                <div class="overlay">
+                    <div class="box">
+                        <div class="box-corners"></div>
+                    </div>
+                </div>
             </div>
-            <div id="loadingStatus" class="loading">⏳ 正在同步寫入 Google 試算表...</div>
+            <div id="loadingStatus" class="loading">⏳ 正在即時寫入 Google 試算表...</div>
         </div>
     </div>
 
@@ -91,19 +274,19 @@
             }
         }
 
-        // 生成 QR Code
         function generateUserQR() {
             const empId = document.getElementById('userSelect').value;
             document.getElementById('qrcode').innerHTML = "";
             new QRCode(document.getElementById("qrcode"), {
                 text: empId,
-                width: 200,
-                height: 200,
+                width: 180,
+                height: 180,
+                colorDark : "#0f172a",
+                colorLight : "#f8fafc",
                 correctLevel : QRCode.CorrectLevel.H
             });
         }
 
-        // 停止掃描器並釋放鏡頭資源（防卡死關鍵）
         function stopScanner() {
             if (codeReader) {
                 codeReader.reset();
@@ -113,16 +296,14 @@
             document.getElementById('loadingStatus').style.display = 'none';
         }
 
-        // 啟動主鏡頭掃描
         async function startRearScanner() {
-            if (codeReader) stopScanner(); // 啟動前先乾淨重置
+            if (codeReader) stopScanner(); 
             
             codeReader = new ZXing.BrowserQRCodeReader();
             try {
                 const videoDevices = await codeReader.getVideoInputDevices();
                 if (videoDevices.length === 0) { alert("找不到相機"); return; }
 
-                // 尋找後置鏡頭
                 currentCameraId = videoDevices[videoDevices.length - 1].deviceId;
                 for (const device of videoDevices) {
                     const label = device.label.toLowerCase();
@@ -139,17 +320,13 @@
                     }
                 };
 
-                // 開始監聽解碼
                 decodeContinuously(constraints);
-
             } catch (error) {
-                console.error("相機啟動失敗，嘗試預設模式:", error);
-                // 備用方案：不指定特定鏡頭直接啟動
+                console.error(error);
                 decodeContinuously(undefined);
             }
         }
 
-        // 獨立出解碼迴圈，方便被重複呼叫重啟
         function decodeContinuously(constraints) {
             if (!codeReader) return;
             
@@ -157,30 +334,21 @@
                 if (result && !isSending) {
                     const scannedId = result.text;
                     if (employees[scannedId]) {
-                        // 🟢 1. 成功掃到，立刻將狀態鎖定，防止重複觸發
                         isSending = true; 
-                        
-                        // 🟢 2. 暫停鏡頭解碼，讓畫面放鬆，防止背景程式卡死
                         if (codeReader) codeReader.reset(); 
-                        
-                        // 🟢 3. 執行發送
                         sendToGoogleSheets(scannedId, employees[scannedId]);
                     }
                 }
-                // 忽略日常沒掃到 QR 碼時的微小報錯，避免 console 塞滿導致效能變慢
                 if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.log("ZXing 微小異常，已自動忽略");
+                    console.log("ZXing error ignored");
                 }
             });
         }
 
-        // 將數據發送到 Google Excel 試算表（優化發送與重啟相機邏輯）
         function sendToGoogleSheets(id, name) {
             document.getElementById('loadingStatus').style.display = 'block';
-
             if (navigator.vibrate) navigator.vibrate(100); 
 
-            // 將資料直接帶在網址後面，解決 no-cors 讀不到 Body 的問題
             const uploadUrl = `${GAS_URL}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 
             fetch(uploadUrl, {
@@ -190,11 +358,8 @@
             .then(() => {
                 document.getElementById('loadingStatus').style.display = 'none';
                 
-                // 用 setTimeout 稍微延遲彈窗，給系統緩衝時間
                 setTimeout(() => {
                     alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功發送。`);
-                    
-                    // 點擊確認關閉 Alert 後，重新初始化相機，畫面就不會撠住！
                     isSending = false;
                     startRearScanner(); 
                 }, 100);
@@ -202,8 +367,6 @@
             .catch(err => {
                 console.error(err);
                 alert("寫入 Google 失敗，請檢查網路或 GAS 權限。");
-                
-                // 失敗了也要記得重啟相機
                 isSending = false;
                 startRearScanner();
             });
