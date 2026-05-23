@@ -3,356 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>企業級二維碼簽到系統</title>
-    <!-- 引入專業級解碼核心與二維碼生成庫 -->
+    <title>跨裝置雲端同步簽到系統</title>
+    <!-- 引入外部專業庫：Firebase(雲端同步), ZXing(高效掃描), QRCode(生成) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --success: #10b981;
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: #f8fafc;
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-        .system-container {
-            width: 100%;
-            max-width: 480px;
-            background: var(--card-bg);
-            border-radius: 24px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .nav-tabs {
-            display: flex;
-            background: rgba(15, 23, 42, 0.6);
-            padding: 6px;
-            margin: 15px;
-            border-radius: 14px;
-        }
-        .nav-btn {
-            flex: 1;
-            border: none;
-            background: transparent;
-            color: #94a3b8;
-            padding: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .nav-btn.active {
-            background: var(--primary);
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-        .panel { display: none; padding: 20px; text-align: center; }
-        .panel.active { display: block; }
-
-        /* 使用者 QR 碼介面 */
-        select {
-            width: 100%;
-            padding: 14px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #f8fafc;
-            border-radius: 12px;
-            font-size: 16px;
-            margin-bottom: 20px;
-            outline: none;
-        }
-        .qr-wrapper {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            display: inline-block;
-            margin: 10px 0 20px 0;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-        }
-        .user-tag { font-size: 20px; font-weight: 700; color: #38bdf8; }
-
-        /* 專業掃描器介面 */
-        .scanner-container {
-            position: relative;
-            width: 100%;
-            padding-top: 100%; /* 1:1 正方形視窗 */
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-        }
-        #preview {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover;
-        }
-        /* 高科技掃描框與動態雷射線 */
-        .scan-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            box-shadow: inset 0 0 0 40px rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-        .scan-box {
-            width: 60%;
-            height: 60%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            position: relative;
-            box-sizing: border-box;
-        }
-        /* 四個角落的專業對焦邊框 */
-        .scan-box::before, .scan-box::after {
-            content: ''; position: absolute; width: 20px; height: 20px; border-color: #38bdf8; border-style: solid;
-        }
-        .scan-box::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; }
-        .scan-box::after { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; }
-        .scan-corner-topright { position: absolute; top: -2px; right: -2px; width: 20px; height: 20px; border-color: #38bdf8; border-style: solid; border-width: 4px 4px 0 0; }
-        .scan-corner-bottomleft { position: absolute; bottom: -2px; left: -2px; width: 20px; height: 20px; border-color: #38bdf8; border-style: solid; border-width: 0 0 4px 4px; }
+        :root { --primary: #2563eb; --bg: #0f172a; --card-bg: #1e293b; --success: #10b981; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: #f8fafc; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .container { width: 100%; max-width: 460px; background: var(--card-bg); border-radius: 24px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .nav-tabs { display: flex; background: rgba(15,23,42,0.6); padding: 5px; border-radius: 12px; margin-bottom: 20px; }
+        .nav-btn { flex: 1; border: none; background: transparent; color: #94a3b8; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 14px; }
+        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+        .panel { display: none; } .panel.active { display: block; }
         
-        /* 動態雷射掃描線 */
-        .laser {
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(to right, transparent, #38bdf8, transparent);
-            box-shadow: 0 0 8px #38bdf8;
-            top: 0;
-            animation: scan 2s linear infinite;
-        }
-        @keyframes scan {
-            0% { top: 0%; }
-            50% { top: 100%; }
-            100% { top: 0%; }
-        }
+        /* 電腦端/展示端 */
+        select { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 10px; font-size: 16px; margin-bottom: 15px; }
+        .qr-box { background: white; padding: 15px; border-radius: 12px; display: inline-block; margin: 10px 0; }
+        .status-window { margin-top: 15px; padding: 15px; background: #0f172a; border-radius: 10px; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         
-        /* 紀錄看板 */
-        .log-container {
-            margin-top: 20px;
-            text-align: left;
-        }
-        .log-title { font-size: 14px; color: #94a3b8; margin-bottom: 8px; font-weight: 600; }
-        .log-list { list-style: none; padding: 0; margin: 0; max-height: 120px; overflow-y: auto; }
-        .log-item {
-            background: #0f172a;
-            padding: 10px 14px;
-            border-radius: 8px;
-            margin-bottom: 6px;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            border-left: 4px solid var(--success);
-        }
-
-        /* 簽到成功跳出提示 */
-        .toast {
-            position: fixed;
-            top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            background: var(--success);
-            color: white; padding: 12px 24px; border-radius: 30px;
-            font-weight: bold; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
-            transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-            z-index: 999;
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); }
+        /* 手機管理員端 */
+        .scanner-view { position: relative; width: 100%; padding-top: 100%; background: #000; border-radius: 14px; overflow: hidden; }
+        #preview { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; }
+        .overlay { position: absolute; top:0; left:0; width:100%; height:100%; box-shadow: inset 0 0 0 40px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        .box { width: 65%; height: 65%; border: 2px dashed #38bdf8; position: relative; }
+        .laser { position: absolute; width: 100%; height: 2px; background: #38bdf8; top: 0; animation: scan 2s linear infinite; box-shadow: 0 0 8px #38bdf8; }
+        @keyframes scan { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
     </style>
 </head>
 <body>
 
-    <!-- 成功簽到提示彈窗 -->
-    <div id="toast" class="toast">🟢 簽到成功！</div>
-
-    <div class="system-container">
-        <!-- 頂部切換頁籤 -->
+    <div class="container">
         <div class="nav-tabs">
-            <button class="nav-btn active" onclick="switchMode('user')">本機憑證 QR</button>
-            <button class="nav-btn" onclick="switchMode('admin')">專業內嵌掃描</button>
+            <button class="nav-btn active" onclick="switchMode('display')">🖥️ 電腦/用戶端 (顯示QR)</button>
+            <button class="nav-btn" onclick="switchMode('scanner')">📱 手機/管理員 (掃描端)</button>
         </div>
 
-        <!-- 區域一：使用者憑證顯示 -->
-        <div id="userPanel" class="panel active">
-            <select id="userSelect" onchange="generateCorporateQR()">
-                <option value="EMP_001">高級工程師 - 張小明</option>
-                <option value="EMP_002">專案經理 - 李美玲</option>
-                <option value="EMP_003">營運總監 - 王大同</option>
+        <!-- 面板 A：電腦/用戶端（秀出QR碼，並等待手機來掃） -->
+        <div id="displayPanel" class="panel active">
+            <h3>請選擇身分並在螢幕上出示</h3>
+            <select id="userSelect" onchange="generateUserQR()">
+                <option value="EMP_A">高級工程師 - 張小明</option>
+                <option value="EMP_B">專案經理 - 李美玲</option>
+                <option value="EMP_C">營運總監 - 王大同</option>
             </select>
-            <div class="qr-wrapper">
-                <div id="qrcode"></div>
+            <div class="qr-box"><div id="qrcode"></div></div>
+            
+            <div class="status-window" id="syncStatus">
+                ⏳ 等待管理員手機掃描感應...
             </div>
-            <div id="userTag" class="user-tag"></div>
-            <p style="color: #64748b; font-size: 13px; margin-top: 5px;">內部系統專屬加密憑證碼</p>
         </div>
 
-        <!-- 區域二：管理員專業掃描器 -->
-        <div id="adminPanel" class="panel">
-            <div class="scanner-container">
-                <!-- 原生視訊串流 -->
+        <!-- 面板 B：管理員端（強制開啟後鏡頭掃描） -->
+        <div id="scannerPanel" class="panel">
+            <h3>管理員控制台 (後鏡頭)</h3>
+            <div class="scanner-view">
                 <video id="preview"></video>
-                <!-- 高科技覆蓋層 -->
-                <div class="scan-overlay">
-                    <div class="scan-box">
-                        <div class="scan-corner-topright"></div>
-                        <div class="scan-corner-bottomleft"></div>
-                        <div class="laser"></div>
-                    </div>
-                </div>
+                <div class="overlay"><div class="box"><div class="laser"></div></div></div>
             </div>
-            
-            <div class="log-container">
-                <div class="log-title">即時簽到控制台頻道</div>
-                <ul class="log-list" id="logList"></ul>
-            </div>
+            <p style="color: #94a3b8; font-size: 13px; margin-top: 10px;">系統已強制請求後置主鏡頭</p>
         </div>
     </div>
 
     <script>
-        const employeeDB = {
-            "EMP_001": "張小明",
-            "EMP_002": "李美玲",
-            "EMP_003": "王大同"
-        };
-        let checkedInSet = new Set();
-        let codeReader = null;
-        let activeCameraId = null;
+        // 模擬名冊
+        const employees = { "EMP_A": "張小明", "EMP_B": "李美玲", "EMP_C": "王大同" };
 
-        // --- 1. 初始化與切換邏輯 ---
+        // --- 🔴 免費公共 Firebase 臨時資料庫初始化 ---
+        // (注意：此為公開測試庫，實務生產環境建議替換成您自己的隱私金鑰)
+        const firebaseConfig = {
+            databaseURL: "https://html-signin-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let codeReader = null;
+
+        // --- 1. 頁面模式切換 ---
         function switchMode(mode) {
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-            if (mode === 'user') {
+            if (mode === 'display') {
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
-                document.getElementById('userPanel').classList.add('active');
-                stopScanning(); // 關閉相機，釋放硬體資源
+                document.getElementById('displayPanel').classList.add('active');
+                if (codeReader) { codeReader.reset(); codeReader = null; }
+                listenToCloudSync(); // 電腦端開啟雲端監聽
             } else {
                 document.querySelectorAll('.nav-btn')[1].classList.add('active');
-                document.getElementById('adminPanel').classList.add('active');
-                startScanning(); // 開啟高效能掃描
+                document.getElementById('scannerPanel').classList.add('active');
+                db.ref('currentCheckIn').off(); // 關閉監聽以省效能
+                startRearScanner(); // 手機端啟動相機
             }
         }
 
-        // --- 2. 使用者端：生成高品質二維碼 ---
-        function generateCorporateQR() {
+        // --- 2. 電腦端：生成二維碼與「即時雲端監聽」 ---
+        function generateUserQR() {
             const empId = document.getElementById('userSelect').value;
-            document.getElementById('userTag').innerText = employeeDB[empId];
             document.getElementById('qrcode').innerHTML = "";
+            
+            // 重設本機畫面提示
+            document.getElementById('syncStatus').style.background = "#0f172a";
+            document.getElementById('syncStatus').innerText = "⏳ 等待管理員手機掃描感應...";
 
             new QRCode(document.getElementById("qrcode"), {
-                text: `SIGNIN_VERIFY:${empId}`, // 加入前綴防止誤掃其他無關的條碼
+                text: empId, // 內容直接放 ID
                 width: 200,
                 height: 200,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M // 中等容錯，兼顧讀取速度與圖形精細度
+                correctLevel : QRCode.CorrectLevel.H
             });
         }
 
-        // --- 3. 管理員端：ZXing 高感度解碼引擎 ---
-        async function startScanning() {
-            // 初始化 ZXing 讀碼器
+        // 【核心】讓電腦網頁即時監聽雲端資料庫的變化
+        function listenToCloudSync() {
+            const empId = document.getElementById('userSelect').value;
+            
+            // 監聽雲端資料庫中 'currentCheckIn' 節點
+            db.ref('currentCheckIn').on('value', (snapshot) => {
+                const data = snapshot.val();
+                // 如果雲端傳來的 ID 剛好等於目前電腦畫面上選取的 ID
+                if (data && data.id === empId && data.status === "SUCCESS") {
+                    
+                    // 電腦網頁立刻產生感應！
+                    const statusWin = document.getElementById('syncStatus');
+                    statusWin.style.background = "#10b981";
+                    statusWin.innerHTML = `🟢 雲端同步成功！${employees[empId]} 已於 ${data.time} 完成簽到！`;
+                    
+                    if (navigator.vibrate) navigator.vibrate(200);
+                }
+            });
+        }
+
+        // --- 3. 手機端：【解決前置鏡頭】強制調用後置主鏡頭 ---
+        async function startRearScanner() {
             codeReader = new ZXing.BrowserQRCodeReader();
             
             try {
-                // 獲取所有相機裝置
-                const videoInputDevices = await codeReader.getVideoInputDevices();
-                if (videoInputDevices.length === 0) {
-                    alert("未偵測到任何相機鏡頭。");
-                    return;
-                }
+                const videoDevices = await codeReader.getVideoInputDevices();
+                if (videoDevices.length === 0) { alert("找不到相機"); return; }
 
-                // 優化策略：優先挑選後置（主）鏡頭，通常解析度與對焦最好
-                let selectedDevice = videoInputDevices[0];
-                for (const device of videoInputDevices) {
+                // 📌 核心關鍵：精準鎖定後置鏡頭 (環境鏡頭)
+                let rearCameraId = null;
+                
+                // 方法 A：從裝置名稱標籤篩選
+                for (const device of videoDevices) {
                     const label = device.label.toLowerCase();
-                    if (label.includes('back') || label.includes('rear') || label.includes('環境')) {
-                        selectedDevice = device;
+                    if (label.includes('back') || label.includes('rear') || label.includes('環境') || label.includes('後置')) {
+                        rearCameraId = device.deviceId;
                         break;
                     }
                 }
 
-                // 啟動連續解碼流（ZXing 內建防抖與高速連讀演算法）
-                codeReader.decodeFromVideoDevice(selectedDevice.deviceId, 'preview', (result, err) => {
+                // 方法 B：如果標籤沒寫，預設選最後一個（大部分手機最後一個是後鏡頭）
+                if (!rearCameraId) {
+                    rearCameraId = videoDevices[videoDevices.length - 1].deviceId;
+                }
+
+                // 📌 核心關鍵二：傳入強制後置的約束條件 (Constraints)
+                const constraints = {
+                    video: {
+                        deviceId: { exact: rearCameraId },
+                        facingMode: "environment" // 雙重保險，強制調用面向環境的鏡頭
+                    }
+                };
+
+                // 開始解碼視訊流
+                codeReader.decodeFromConstraints(constraints, 'preview', (result, err) => {
                     if (result) {
-                        const rawText = result.text;
-                        // 驗證是否為我們系統發出的二維碼
-                        if (rawText.startsWith("SIGNIN_VERIFY:")) {
-                            const empId = rawText.replace("SIGNIN_VERIFY:", "");
-                            processCheckIn(empId);
+                        const scannedId = result.text;
+                        if (employees[scannedId]) {
+                            sendSignToCloud(scannedId); // 掃到名單內的人，往雲端送
                         }
                     }
-                    // 忽略無解碼結果的微小錯誤(err)，保持鏡頭串流順暢
                 });
 
             } catch (error) {
-                console.error("相機啟動失敗:", error);
-                alert("相機啟動異常，請確保已開啟 HTTPS 網址與相機授權。");
+                console.error(error);
+                // 備用方案：如果硬體太舊不支援約束，改用一般啟動
+                codeReader.decodeFromVideoDevice(undefined, 'preview', (result) => {
+                    if (result && employees[result.text]) sendSignToCloud(result.text);
+                });
             }
         }
 
-        function stopScanning() {
-            if (codeReader) {
-                codeReader.reset(); // 停止視訊流並關閉鏡頭硬體
-                codeReader = null;
-            }
+        // --- 4. 雲端發送聯動 ---
+        let lock = false;
+        function sendSignToCloud(empId) {
+            if (lock) return;
+            lock = true;
+
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+            // ⚡ 將簽到數據寫入 Firebase 雲端廣播機制
+            db.ref('currentCheckIn').set({
+                id: empId,
+                status: "SUCCESS",
+                time: timeStr
+            }).then(() => {
+                alert(`📱 手機回報：${employees[empId]} 簽到資料已同步至雲端！`);
+                setTimeout(() => { lock = false; }, 2000); // 兩秒防重刷鎖
+            });
         }
 
-        // --- 4. 簽到核心處理邏輯 ---
-        let isProcessing = false; // 防止連續解碼造成的瞬間重複觸發
-        function processCheckIn(empId) {
-            if (isProcessing) return;
-            isProcessing = true;
-
-            if (employeeDB[empId]) {
-                const name = employeeDB[empId];
-
-                if (checkedInSet.has(empId)) {
-                    // 已簽到過，震動提示（如果設備支援）
-                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                    alert(`【${name}】今天已經簽到過了！`);
-                    setTimeout(() => { isProcessing = false; }, 2000); // 兩秒後才允許下一次掃描
-                    return;
-                }
-
-                // 成功簽到邏輯
-                checkedInSet.add(empId);
-                if (navigator.vibrate) navigator.vibrate(150); // 成功短震動
-
-                // 彈出頂部 Professional Toast 提示
-                const toast = document.getElementById('toast');
-                toast.innerText = `🟢 ${name} 簽到成功！`;
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 2500);
-
-                // 寫入下方即時控制台日誌
-                const now = new Date();
-                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-                const logList = document.getElementById('logList');
-                const li = document.createElement('li');
-                li.className = 'log-item';
-                li.innerHTML = `<span>👤 ${name} (${empId})</span> <span style="color:#64748b;">${timeStr}</span>`;
-                logList.prepend(li);
-            }
-
-            // 1.5 秒延遲鎖，確保管理員有時間把手機移開，不會連續刷同一個人
-            setTimeout(() => { isProcessing = false; }, 1500);
-        }
-
-        window.onload = generateCorporateQR;
+        // 初始化
+        window.onload = function() {
+            generateUserQR();
+            listenToCloudSync();
+        };
     </script>
 </body>
 </html>
