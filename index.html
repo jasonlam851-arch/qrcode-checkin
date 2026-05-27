@@ -14,37 +14,29 @@
       }
     </script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
         body { background: #121212; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; text-align: center; }
         .brand { font-size: 2.2rem; font-weight: 700; color: #d4af37; letter-spacing: 4px; margin: 20px 0; }
-        .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 30px; width: 100%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
+        .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 30px; width: 100%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.5); position: relative; }
         
-        /* 階段一：選擇人數 */
         #selectPhase { display: block; }
-        .info-header { font-size: 1.1rem; color: #a0aec0; margin-bottom: 30px; letter-spacing: 2px; }
         .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .num-btn { background: #262626; border: 1px solid #3d3d3d; color: white; font-size: 1.8rem; height: 65px; border-radius: 12px; cursor: pointer; font-weight: bold; }
         
-        /* 核心二維碼顯示區 (階段二、三都會留著) */
         #qrContainer { display: none; }
-        .ticket-num { font-size: 4.5rem; font-weight: 700; color: #ffffff; margin: 10px 0; font-family: monospace; transition: all 0.3s; }
+        .ticket-num { font-size: 4.5rem; font-weight: 700; color: #ffffff; margin: 10px 0; font-family: monospace; }
         #qrcode { display: inline-block; background: white; padding: 12px; border-radius: 12px; margin: 15px 0; }
         
-        /* 🔥 叫號閃爍紅色樣式 */
         .blink-red { animation: flashRed 0.5s infinite alternate; }
         @keyframes flashRed { from { background: #1a1a1a; } to { background: #741b1b; border-color: #e53e3e; } }
-        .call-msg { display: none; color: #e53e3e; font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .call-msg { display: none; color: #e53e3e; font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; }
 
-        /* 倒數顯示 */
         #countdownArea { display: none; margin-top: 10px; }
         .countdown { font-size: 3.5rem; font-weight: 700; color: #e53e3e; font-family: monospace; }
 
-        /* 階段四：感謝畫面 */
         #thanksPhase { display: none; }
         .thanks-txt { font-size: 1.8rem; font-weight: bold; color: #d4af37; margin: 40px 0; line-height: 1.6; }
-
-        .footer-tip { font-size: 0.85rem; color: #555; margin-top: 15px; line-height: 1.6; }
+        .footer-tip { font-size: 0.85rem; color: #555; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -56,9 +48,8 @@
     </div>
 
     <div class="card" id="mainCard">
-        
         <div id="selectPhase">
-            <div class="info-header">歡迎光臨，請選擇到訪人數</div>
+            <div style="font-size: 1.1rem; color: #a0aec0; margin-bottom: 30px;">歡迎光臨，請選擇到訪人數</div>
             <div class="num-grid">
                 <button class="num-btn" onclick="takeTicket(1)">1</button>
                 <button class="num-btn" onclick="takeTicket(2)">2</button>
@@ -80,7 +71,6 @@
                 <div style="color: #a0aec0; font-size: 0.9rem;">用餐剩餘時間 (限時1.5小時)</div>
                 <div class="countdown" id="timerDisplay">90:00</div>
             </div>
-
             <div class="footer-tip" id="qrFooter">請向工作人員出示此二維碼。</div>
         </div>
     </div>
@@ -112,16 +102,20 @@
         let timerInterval = null;
         let voiceInterval = null;
         let lastStatus = null;
+        let serverOffset = 0; // 🔥 用於對齊雲端標準時差
+
+        // 🟢 先精準估算手機與雲端伺服器的時差
+        onValue(ref(db, ".info/serverTimeOffset"), (snapshot) => {
+            serverOffset = snapshot.val() || 0;
+        });
 
         const myNodeRef = ref(db, `comboSystem/${myUID}`);
 
-        // 監聽全系統與個人狀態
         onValue(ref(db), (snapshot) => {
             const root = snapshot.val() || {};
             const data = root.comboSystem?.[myUID];
             const queueData = root.queueSystem || {};
 
-            // 處理離開餐廳（店員從 dining 改為 null）
             if (lastStatus === "dining" && !data) {
                 lastStatus = null;
                 clearInterval(timerInterval);
@@ -130,7 +124,6 @@
             }
 
             if (!data) {
-                // 待機狀態 (選擇人數)
                 lastStatus = null;
                 document.getElementById('selectPhase').style.display = 'block';
                 document.getElementById('qrContainer').style.display = 'none';
@@ -142,28 +135,22 @@
 
             lastStatus = data.status;
 
-            // 1. 排隊候位狀態
             if (data.status === "waiting") {
                 document.getElementById('selectPhase').style.display = 'none';
                 document.getElementById('qrContainer').style.display = 'block';
                 document.getElementById('countdownArea').style.display = 'none';
                 document.getElementById('stateLabel').innerText = "您的排隊號碼";
                 document.getElementById('ticketDisplay').innerText = data.ticketNumber;
-                document.getElementById('qrFooter').innerText = "大屏幕叫號後，請出示此二維碼給工作人員。";
 
                 if (!qrcodeObj) qrcodeObj = new QRCode(document.getElementById("qrcode"), { text: myUID, width: 160, height: 160 });
 
-                // 🔴 檢查是否被叫號
                 const myGroup = data.ticketNumber.substring(0, 1);
                 const myNum = parseInt(data.ticketNumber.substring(1));
                 const currentCalled = queueData[myGroup]?.currentCalled || 0;
 
                 if (currentCalled === myNum) {
-                    // 號碼吻合！觸發閃紅、頂部訊息
                     document.getElementById('mainCard').classList.add('blink-red');
                     document.getElementById('callMsg').style.display = 'block';
-                    
-                    // 手機親自語音叫號 (每 6 秒重複一次，直到掃碼入座)
                     if (!voiceInterval) {
                         triggerPhoneVoice(myGroup, myNum);
                         voiceInterval = setInterval(() => triggerPhoneVoice(myGroup, myNum), 6000);
@@ -171,76 +158,63 @@
                 } else {
                     document.getElementById('mainCard').classList.remove('blink-red');
                     document.getElementById('callMsg').style.display = 'none';
-                    clearInterval(voiceInterval);
-                    voiceInterval = null;
+                    clearInterval(voiceInterval); voiceInterval = null;
                 }
             } 
-            // 2. 用餐中狀態
             else if (data.status === "dining") {
-                clearInterval(voiceInterval);
-                voiceInterval = null;
+                clearInterval(voiceInterval); voiceInterval = null;
                 document.getElementById('selectPhase').style.display = 'none';
                 document.getElementById('qrContainer').style.display = 'block';
                 document.getElementById('countdownArea').style.display = 'block';
                 document.getElementById('mainCard').classList.remove('blink-red');
                 document.getElementById('callMsg').style.display = 'none';
                 
-                document.getElementById('stateLabel').innerText = "正在用餐中 (號碼)";
+                document.getElementById('stateLabel').innerText = "用餐桌號識別碼 (二維碼常駐)";
                 document.getElementById('ticketDisplay').innerText = data.ticketNumber;
-                document.getElementById('qrFooter').innerText = "加單或離店結帳時，請向工作人員出示此二維碼。";
 
-                startCountdown(data.startTime);
+                startSynchronizedClock(data.startTime);
             }
         });
 
-        // 顧客手機發聲叫號
         function triggerPhoneVoice(type, num) {
             if ('speechSynthesis' in window) {
                 let groupStr = type === 'A' ? '一人 A' : type === 'B' ? '二至三人 B' : '四至五人 C';
                 let ut = new SpeechSynthesisUtterance(`請 ${groupStr} ${num} 號前來櫃檯入座`);
-                ut.lang = 'zh-HK'; ut.rate = 0.95;
-                window.speechSynthesis.speak(ut);
+                ut.lang = 'zh-HK'; window.speechSynthesis.speak(ut);
             }
         }
 
-        // 選擇人數
         window.takeTicket = function(guests) {
             let type = 'A';
             if (guests === 1) type = 'A';
             else if (guests === 2 || guests === 3) type = 'B';
             else if (guests === 4 || guests === 5) type = 'C';
-
-            // 需要點擊解鎖手機語音權限
-            if ('speechSynthesis' in window) { window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); }
+            if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
 
             const totalRef = ref(db, `queueSystem/${type}/totalIssued`);
-            runTransaction(totalRef, (current) => {
-                return (current || 0) + 1;
-            }).then((result) => {
+            runTransaction(totalRef, (current) => { return (current || 0) + 1; }).then((result) => {
                 if (result.committed) {
                     const num = result.snapshot.val();
                     const formattedNum = type + String(num).padStart(3, '0');
-                    
-                    set(myNodeRef, {
-                        status: "waiting",
-                        ticketNumber: formattedNum,
-                        guestsCount: guests,
-                        timestamp: Date.now()
-                    });
+                    set(myNodeRef, { status: "waiting", ticketNumber: formattedNum, guestsCount: guests });
                 }
             });
         };
 
-        // 1.5小時倒數
-        function startCountdown(startTime) {
+        // 🔥 毫秒級精準對齊倒數計時
+        function startSynchronizedClock(serverStartTime) {
             clearInterval(timerInterval);
             const totalSec = 90 * 60;
+
             timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const remain = totalSec - elapsed;
+                // 利用 serverOffset 計算出當前的絕對雲端標準時間
+                const estimatedServerNow = Date.now() + serverOffset;
+                const elapsedSec = Math.floor((estimatedServerNow - serverStartTime) / 1000);
+                const remain = totalSec - elapsedSec;
+
                 if (remain <= 0) {
                     clearInterval(timerInterval);
-                    set(myNodeRef, null); // 超時自動重置
+                    set(myNodeRef, null);
                 } else {
                     const m = Math.floor(remain / 60);
                     const s = remain % 60;
@@ -249,16 +223,10 @@
             }, 1000);
         }
 
-        // 顯示 10 秒感謝用餐畫面
         function showThanksPage() {
             document.getElementById('mainCard').style.display = 'none';
             document.getElementById('thanksPhase').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('thanksPhase').style.display = 'none';
-                document.getElementById('mainCard').style.display = 'block';
-                // 刷新頁面徹底重置
-                window.location.reload();
-            }, 10 * 1000);
+            setTimeout(() => { window.location.reload(); }, 10000);
         }
     </script>
 </body>
