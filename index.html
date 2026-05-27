@@ -3,172 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能叫號系統</title>
+    <title>跨裝置智能叫號系統</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+          "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"
+        }
+      }
+    </script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: #f5f7fa;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        /* 三欄佈局 */
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f0f4f8; padding: 20px; color: #333; }
+        h1 { text-align: center; margin-bottom: 20px; color: #2c3e50; font-size: 2.2rem; }
+        
         .container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
             max-width: 1400px;
             margin: 0 auto;
         }
-
+        
         .card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+            padding: 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 400px;
-        }
-
-        .card-title {
-            font-size: 1.5rem;
-            color: #4a5568;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #3182ce;
-            padding-bottom: 5px;
-            width: 100%;
             text-align: center;
+            min-height: 420px;
+        }
+        
+        .card-title {
+            font-size: 1.6rem;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-weight: bold;
+            width: 100%;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 8px;
         }
 
-        /* 通用按鈕樣式 */
         button {
-            padding: 12px 24px;
-            font-size: 1.1rem;
+            padding: 15px 25px;
+            font-size: 1.2rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: bold;
-            width: 80%;
+            width: 85%;
             margin: 10px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        button:active { transform: scale(0.97); box-shadow: none; }
 
-        button:active {
-            transform: scale(0.98);
-        }
+        /* 客人排隊 */
+        .btn-ticket { background-color: #3498db; color: white; height: 80px; font-size: 1.6rem; }
+        .btn-ticket:hover { background-color: #2980b9; }
+        .ticket-display { margin-top: 25px; font-size: 1.3rem; }
+        .ticket-num { font-size: 3.5rem; font-weight: bold; color: #2980b9; }
 
-        /* 客人排隊區 */
-        .btn-ticket {
-            background-color: #3182ce;
-            color: white;
-            height: 80px;
-            font-size: 1.5rem;
-        }
-        .btn-ticket:hover { background-color: #2b6cb0; }
+        /* 叫號屏幕 */
+        .screen-card { background-color: #2c3e50; color: white; }
+        .screen-card .card-title { color: white; border-bottom-color: #e74c3c; }
+        .screen-display { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .current-label { font-size: 1.4rem; color: #f1c40f; font-weight: bold; letter-spacing: 2px; }
+        .current-number { font-size: 7rem; font-weight: bold; color: #e74c3c; margin: 10px 0; text-shadow: 0 0 10px rgba(231,76,60,0.3); }
+
+        /* 店員控制 */
+        .btn-next { background-color: #2ecc71; color: white; height: 70px; font-size: 1.4rem; }
+        .btn-next:hover { background-color: #27ae60; }
+        .btn-recall { background-color: #e67e22; color: white; }
+        .btn-recall:hover { background-color: #d35400; }
+        .stats { margin: 20px 0; font-size: 1.1rem; text-align: left; width: 85%; line-height: 1.8; }
+        .btn-reset { background-color: #95a5a6; color: white; width: 50%; font-size: 0.9rem; padding: 8px; margin-top: auto; }
+        .btn-reset:hover { background-color: #7f8c8d; }
         
-        .ticket-display {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 1.2rem;
-            color: #4a5568;
-        }
-        .ticket-num {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #2b6cb0;
-        }
-
-        /* 叫號屏幕區 */
-        .screen-display {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-        .current-label {
-            font-size: 1.3rem;
-            color: #e53e3e;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-        .current-number {
-            font-size: 6rem;
-            font-weight: bold;
-            color: #e53e3e;
-            margin: 10px 0;
-            animation: blink 1s infinite alternate;
-        }
-        @keyframes blink {
-            0% { opacity: 1; }
-            100% { opacity: 0.8; }
-        }
-
-        /* 店員叫號區 */
-        .btn-next {
-            background-color: #38a169;
-            color: white;
-            height: 60px;
-        }
-        .btn-next:hover { background-color: #2f855a; }
-
-        .btn-recall {
-            background-color: #dd6b20;
-            color: white;
-        }
-        .btn-recall:hover { background-color: #c05621; }
-
-        .btn-reset {
-            background-color: #e53e3e;
-            color: white;
-            margin-top: auto;
-            width: 50%;
-            font-size: 0.9rem;
-            padding: 8px;
-        }
-        .btn-reset:hover { background-color: #c53030; }
-
-        .stats {
-            margin-top: 15px;
-            font-size: 1rem;
-            color: #718096;
-            text-align: left;
-            width: 80%;
-        }
+        /* 狀態提示 */
+        #syncStatus { text-align: center; color: #7f8c8d; font-size: 0.9rem; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <h1>🏪 智能叫號系統</h1>
+    <h1>🏪 跨裝置雲端叫號系統</h1>
 
     <div class="container">
-
         <div class="card">
             <div class="card-title">1. 客人排隊機</div>
-            <p style="color: #718096; margin-bottom: 20px; text-align: center;">請點擊下方按鈕取號</p>
-            <button class="btn-ticket" onclick="takeTicket()">按此取號</button>
+            <p style="color: #7f8c8d; margin-bottom: 20px;">請點擊按鈕取號</p>
+            <button class="btn-ticket" onclick="window.takeTicket()">按此取號</button>
             <div class="ticket-display" id="ticketDisplay" style="display: none;">
                 您的號碼是：<br>
                 <span class="ticket-num" id="myNumber">0</span>
             </div>
         </div>
 
-        <div class="card" style="background-color: #fffaf0; border: 2px solid #feebc8;">
-            <div class="card-title" style="border-bottom-color: #dd6b20;">2. 電子叫號屏幕</div>
+        <div class="card screen-card">
+            <div class="card-title">2. 電子叫號屏幕</div>
             <div class="screen-display">
                 <div class="current-label">📢 請此號碼到櫃檯</div>
                 <div class="current-number" id="screenNumber">--</div>
@@ -176,96 +111,126 @@
         </div>
 
         <div class="card">
-            <div class="card-title" style="border-bottom-color: #38a169;">3. 店員控制面板</div>
-            <button class="btn-next" onclick="nextNumber()">🔔 叫下一位</button>
-            <button class="btn-recall" onclick="recallNumber()">🔄 重呼當前號碼</button>
+            <div class="card-title" style="border-bottom-color: #2ecc71;">3. 店員控制面板</div>
+            <button class="btn-next" onclick="window.nextNumber()">🔔 叫下一位</button>
+            <button class="btn-recall" onclick="window.recallNumber()">🔄 重呼號碼</button>
             
             <div class="stats">
-                <p>📊 目前排隊總人數：<span id="totalTickets" style="font-weight:bold;">0</span></p>
-                <p>⏳ 剩餘未叫人數：<span id="waitingCount" style="font-weight:bold; color:#3182ce;">0</span></p>
+                <p>📊 目前已發出總號碼：<span id="totalTickets" style="font-weight:bold;">0</span></p>
+                <p>⏳ 剩餘等待人數：<span id="waitingCount" style="font-weight:bold; color:#2980b9;">0</span></p>
             </div>
-
-            <button class="btn-reset" onclick="resetSystem()">重置系統</button>
+            <button class="btn-reset" onclick="window.resetSystem()">重置清零</button>
         </div>
-
     </div>
+    
+    <div id="syncStatus">☁️ 雲端連線中...</div>
 
-    <script>
-        // 初始化數據（嘗試從本地儲存讀取，若無則設為0）
-        let currentCalled = parseInt(localStorage.getItem('currentCalled')) || 0;
-        let totalIssued = parseInt(localStorage.getItem('totalIssued')) || 0;
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getDatabase, ref, set, onValue, runTransaction } from "firebase/database";
 
-        // 頁面載入時更新一次顯示
-        updateDisplay();
+        // 已經為你填入圖片中的專屬 Firebase 設定資料
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwUF4-rBRG9QGyti2_Smx_PRZ8sZOZL0A",
+            authDomain: "my-queue-system-3bcc5.firebaseapp.com",
+            databaseURL: "https://my-queue-system-3bcc5-default-rtdb.firebaseio.com",
+            projectId: "my-queue-system-3bcc5",
+            storageBucket: "my-queue-system-3bcc5.firebasestorage.app",
+            messagingSenderId: "32354532851",
+            appId: "1:32354532851:web:4ba48fcc31bb454399a686",
+            measurementId: "G-L9DPMFKD35"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const dbRef = ref(db, 'queueSystem');
+
+        // 本地變數緩存
+        let currentCalled = 0;
+        let totalIssued = 0;
+        let isFirstLoad = true;
+
+        // 監聽雲端資料庫變動
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const oldCalled = currentCalled;
+                currentCalled = data.currentCalled || 0;
+                totalIssued = data.totalIssued || 0;
+                
+                // 更新畫面
+                document.getElementById('screenNumber').innerText = currentCalled > 0 ? currentCalled : "--";
+                document.getElementById('totalTickets').innerText = totalIssued;
+                let waiting = totalIssued - currentCalled;
+                document.getElementById('waitingCount').innerText = waiting >= 0 ? waiting : 0;
+                document.getElementById('syncStatus').innerText = "☁️ 雲端實時同步中";
+
+                // 新叫號時觸發語音（排除第一次載入網頁時的誤鳴）
+                if (!isFirstLoad && currentCalled > oldCalled) {
+                    speakNumber(currentCalled);
+                }
+                isFirstLoad = false;
+            } else {
+                // 資料庫為空時初始化
+                set(dbRef, { currentCalled: 0, totalIssued: 0 });
+            }
+        }, (error) => {
+            console.error(error);
+            document.getElementById('syncStatus').innerText = "❌ 連線失敗，請檢查 Realtime Database 是否已開啟測試模式";
+        });
 
         // 1. 客人取號
-        function takeTicket() {
-            totalIssued++;
-            localStorage.setItem('totalIssued', totalIssued);
-            
-            // 顯示客人的號碼
-            document.getElementById('ticketDisplay').style.display = 'block';
-            document.getElementById('myNumber').innerText = totalIssued;
-            
-            updateDisplay();
-        }
+        window.takeTicket = function() {
+            const totalRef = ref(db, 'queueSystem/totalIssued');
+            runTransaction(totalRef, (currentTotal) => {
+                return (currentTotal || 0) + 1;
+            }).then((result) => {
+                if (result.committed) {
+                    const myNum = result.snapshot.val();
+                    document.getElementById('ticketDisplay').style.display = 'block';
+                    document.getElementById('myNumber').innerText = myNum;
+                }
+            });
+        };
 
         // 3. 店員叫下一位
-        function nextNumber() {
+        window.nextNumber = function() {
             if (currentCalled < totalIssued) {
-                currentCalled++;
-                localStorage.setItem('currentCalled', currentCalled);
-                updateDisplay();
-                speakNumber(currentCalled);
+                set(ref(db, 'queueSystem/currentCalled'), currentCalled + 1);
             } else {
                 alert("目前沒有客人在排隊喔！");
             }
-        }
+        };
 
         // 3. 店員重呼
-        function recallNumber() {
+        window.recallNumber = function() {
             if (currentCalled > 0) {
                 speakNumber(currentCalled);
             } else {
                 alert("尚未開始叫號！");
             }
-        }
+        };
 
-        // 更新所有屏幕和數據顯示
-        function updateDisplay() {
-            // 更新叫號屏幕
-            document.getElementById('screenNumber').innerText = currentCalled > 0 ? currentCalled : "--";
-            // 更新店員面板數據
-            document.getElementById('totalTickets').innerText = totalIssued;
-            
-            let waiting = totalIssued - currentCalled;
-            document.getElementById('waitingCount').innerText = waiting >= 0 ? waiting : 0;
-        }
-
-        // 語音播報功能（自動識別廣東話/華語，這裡預設廣東話）
+        // 語音播報 (廣東話)
         function speakNumber(num) {
             if ('speechSynthesis' in window) {
-                // 先停止之前正在播報的聲音
-                window.speechSynthesis.cancel();
-                
+                window.speechSynthesis.cancel(); // 停止上一句
                 let text = `請 ${num} 號到櫃檯`;
                 let utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-HK'; // 廣東話發音 (如需普通話可改為 zh-CN)
-                utterance.rate = 0.9;     // 語速稍微減慢一點
+                utterance.lang = 'zh-HK';
+                utterance.rate = 0.95;
                 window.speechSynthesis.speak(utterance);
             }
         }
 
         // 重置系統
-        function resetSystem() {
-            if (confirm("確定要將所有號碼清零重置嗎？")) {
-                currentCalled = 0;
-                totalIssued = 0;
-                localStorage.clear();
+        window.resetSystem = function() {
+            if (confirm("確定要將雲端所有號碼清零重置嗎？所有裝置都會被同步清空！")) {
+                set(dbRef, { currentCalled: 0, totalIssued: 0 });
                 document.getElementById('ticketDisplay').style.display = 'none';
-                updateDisplay();
             }
-        }
+        };
     </script>
 </body>
 </html>
