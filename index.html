@@ -1,372 +1,271 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>極速智慧簽到系統</title>
-    <!-- 🚀 引入高效能解碼庫 Html5Qrcode 與 二維碼生成庫 -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能叫號系統</title>
     <style>
-        :root { 
-            --primary: #1f2937; 
-            --bg: #f8fafc; 
-            --card-bg: #ffffff; 
-            --text: #0f172a; 
-            --accent: #2563eb; 
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
         }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            padding: 16px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            box-sizing: border-box; 
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
         }
-        
-        .container { 
-            width: 100%; 
-            max-width: 440px; 
-            background: var(--card-bg); 
-            border-radius: 30px; 
-            padding: 24px; 
-            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.04); 
-            text-align: center; 
-            position: relative;
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
         }
-        
-        .nav-tabs { 
-            display: flex; 
-            background: #f1f5f9; 
-            padding: 4px; 
-            border-radius: 14px; 
-            margin-bottom: 24px; 
+
+        /* 三欄佈局 */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        .nav-btn { 
-            flex: 1; 
-            border: none; 
-            background: transparent; 
-            color: #64748b; 
-            padding: 12px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            border-radius: 10px; 
-            font-size: 14px; 
-            transition: all 0.2s;
-        }
-        .nav-btn.active { 
-            background: white; 
-            color: var(--text); 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-        }
-        
-        .panel { display: none; } 
-        .panel.active { display: block; }
-        
-        h3 { font-size: 19px; font-weight: 700; margin: 0 0 6px 0; }
-        p { color: #64748b; font-size: 13px; margin: 0 0 20px 0; }
-        
-        select { 
-            width: 100%; 
-            padding: 14px; 
-            background: #f8fafc; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 12px; 
-            font-size: 16px; 
-            margin-bottom: 16px; 
-            outline: none;
-        }
-        
-        .qr-box { 
-            background: #f8fafc; 
-            padding: 20px; 
-            border-radius: 16px; 
-            display: inline-block; 
-            border: 1px solid #f1f5f9; 
-        }
-        
-        /* 📷 舒適的掃描窗高度 */
-        .scanner-view { 
-            position: relative; 
-            width: 100%; 
-            padding-top: 85%; 
-            background: #000; 
-            border-radius: 20px; 
-            overflow: hidden; 
-        }
-        
-        #preview { 
-            position: absolute; 
-            top: 0; left: 0; 
-            width: 100% !important; 
-            height: 100% !important; 
-            object-fit: cover !important; 
-        }
-        #preview video { object-fit: cover !important; }
-        
-        .overlay { 
-            position: absolute; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            display: flex; justify-content: center; align-items: center; 
-            pointer-events: none; 
-            z-index: 10;
-        }
-        
-        /* ✨ 完美比例的極簡圓角瞄準框 */
-        .box { 
-            width: 65%; 
-            height: 75%; 
-            border: 2px solid rgba(255, 255, 255, 0.85); 
-            border-radius: 16px; 
-            box-shadow: 0 0 0 500px rgba(0, 0, 0, 0.45); 
-        }
-        
-        .loading { 
-            display: none; 
-            color: var(--accent); 
-            font-weight: 600; 
-            margin-top: 16px; 
-            font-size: 14px;
-        }
-        
-        /* 底部工具區與版本號碼 */
-        .footer-info {
-            margin-top: 20px;
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 25px;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
+            min-height: 400px;
         }
-        .clear-btn {
-            background: none; border: none; color: #94a3b8; font-size: 11px; cursor: pointer; text-decoration: underline; padding: 0;
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #4a5568;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3182ce;
+            padding-bottom: 5px;
+            width: 100%;
+            text-align: center;
         }
-        .version-tag {
-            font-size: 11px; color: #cbd5e1; font-family: monospace;
+
+        /* 通用按鈕樣式 */
+        button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            width: 80%;
+            margin: 10px 0;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* 客人排隊區 */
+        .btn-ticket {
+            background-color: #3182ce;
+            color: white;
+            height: 80px;
+            font-size: 1.5rem;
+        }
+        .btn-ticket:hover { background-color: #2b6cb0; }
+        
+        .ticket-display {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #4a5568;
+        }
+        .ticket-num {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2b6cb0;
+        }
+
+        /* 叫號屏幕區 */
+        .screen-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        .current-label {
+            font-size: 1.3rem;
+            color: #e53e3e;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .current-number {
+            font-size: 6rem;
+            font-weight: bold;
+            color: #e53e3e;
+            margin: 10px 0;
+            animation: blink 1s infinite alternate;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+
+        /* 店員叫號區 */
+        .btn-next {
+            background-color: #38a169;
+            color: white;
+            height: 60px;
+        }
+        .btn-next:hover { background-color: #2f855a; }
+
+        .btn-recall {
+            background-color: #dd6b20;
+            color: white;
+        }
+        .btn-recall:hover { background-color: #c05621; }
+
+        .btn-reset {
+            background-color: #e53e3e;
+            color: white;
+            margin-top: auto;
+            width: 50%;
+            font-size: 0.9rem;
+            padding: 8px;
+        }
+        .btn-reset:hover { background-color: #c53030; }
+
+        .stats {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #718096;
+            text-align: left;
+            width: 80%;
         }
     </style>
 </head>
 <body>
 
+    <h1>🏪 智能叫號系統</h1>
+
     <div class="container">
-        <div class="nav-tabs">
-            <button class="nav-btn active" onclick="switchMode('display')">👤 員工 QR Code</button>
-            <button class="nav-btn" onclick="switchMode('scanner')">📷 管理員掃描</button>
-        </div>
 
-        <!-- 面板 A：員工出示 QR Code -->
-        <div id="displayPanel" class="panel active">
-            <h3>請選擇您的身分</h3>
-            <p>出示下方 QR Code 即可進行簽到</p>
-            <select id="userSelect" onchange="generateUserQR()">
-                <option value="EMP_001">張小明 (EMP_001)</option>
-                <option value="EMP_002">李美玲 (EMP_002)</option>
-                <option value="EMP_003">王大同 (EMP_003)</option>
-            </select>
-            <div class="qr-box"><div id="qrcode"></div></div>
-        </div>
-
-        <!-- 面板 B：管理員掃描鏡頭 -->
-        <div id="scannerPanel" class="panel">
-            <h3>將二維碼放入框內</h3>
-            <p>即時驗證：支援過濾無效碼與重複簽到</p>
-            <div class="scanner-view">
-                <div id="preview"></div>
-                <div class="overlay">
-                    <div class="box"></div>
-                </div>
+        <div class="card">
+            <div class="card-title">1. 客人排隊機</div>
+            <p style="color: #718096; margin-bottom: 20px; text-align: center;">請點擊下方按鈕取號</p>
+            <button class="btn-ticket" onclick="takeTicket()">按此取號</button>
+            <div class="ticket-display" id="ticketDisplay" style="display: none;">
+                您的號碼是：<br>
+                <span class="ticket-num" id="myNumber">0</span>
             </div>
-            <div id="loadingStatus" class="loading">⏳ 正在同步寫入 Google Excel...</div>
+        </div>
+
+        <div class="card" style="background-color: #fffaf0; border: 2px solid #feebc8;">
+            <div class="card-title" style="border-bottom-color: #dd6b20;">2. 電子叫號屏幕</div>
+            <div class="screen-display">
+                <div class="current-label">📢 請此號碼到櫃檯</div>
+                <div class="current-number" id="screenNumber">--</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title" style="border-bottom-color: #38a169;">3. 店員控制面板</div>
+            <button class="btn-next" onclick="nextNumber()">🔔 叫下一位</button>
+            <button class="btn-recall" onclick="recallNumber()">🔄 重呼當前號碼</button>
             
-            <div class="footer-info">
-                <button class="clear-btn" onclick="clearRecords()">重置今日紀錄 (測試用)</button>
-                <span class="version-tag">v2.2.1-Build2026</span>
+            <div class="stats">
+                <p>📊 目前排隊總人數：<span id="totalTickets" style="font-weight:bold;">0</span></p>
+                <p>⏳ 剩餘未叫人數：<span id="waitingCount" style="font-weight:bold; color:#3182ce;">0</span></p>
             </div>
+
+            <button class="btn-reset" onclick="resetSystem()">重置系統</button>
         </div>
+
     </div>
 
     <script>
-        const employees = {
-            "EMP_001": "張小明",
-            "EMP_002": "李美玲",
-            "EMP_003": "王大同"
-        };
+        // 初始化數據（嘗試從本地儲存讀取，若無則設為0）
+        let currentCalled = parseInt(localStorage.getItem('currentCalled')) || 0;
+        let totalIssued = parseInt(localStorage.getItem('totalIssued')) || 0;
 
-        // 🔗 您的 Google Apps Script 網頁應用程式網址
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyM4gOAFtIAW3ihSjdL-Q9vfZEAJECvAE3CjQ8P5tK9yEKoTTcqOPrUwh0yFMv-JZh9AQ/exec";
+        // 頁面載入時更新一次顯示
+        updateDisplay();
 
-        let html5QrcodeScanner = null;
-        let isProcessing = false;
-        let isCameraChanging = false; 
-
-        async function switchMode(mode) {
-            if (isCameraChanging) return; 
+        // 1. 客人取號
+        function takeTicket() {
+            totalIssued++;
+            localStorage.setItem('totalIssued', totalIssued);
             
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            // 顯示客人的號碼
+            document.getElementById('ticketDisplay').style.display = 'block';
+            document.getElementById('myNumber').innerText = totalIssued;
+            
+            updateDisplay();
+        }
 
-            if (mode === 'display') {
-                document.querySelectorAll('.nav-btn')[0].classList.add('active');
-                document.getElementById('displayPanel').classList.add('active');
-                await stopScanner();
+        // 3. 店員叫下一位
+        function nextNumber() {
+            if (currentCalled < totalIssued) {
+                currentCalled++;
+                localStorage.setItem('currentCalled', currentCalled);
+                updateDisplay();
+                speakNumber(currentCalled);
             } else {
-                document.querySelectorAll('.nav-btn')[1].classList.add('active');
-                document.getElementById('scannerPanel').classList.add('active');
-                await startAdvancedScanner(); 
+                alert("目前沒有客人在排隊喔！");
             }
         }
 
-        function generateUserQR() {
-            const empId = document.getElementById('userSelect').value;
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), {
-                text: empId,
-                width: 180,
-                height: 180,
-                colorDark : "#0f172a",
-                colorLight : "#f8fafc",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-        }
-
-        async function stopScanner() {
-            isCameraChanging = true;
-            try {
-                if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
-                    await html5QrcodeScanner.stop();
-                }
-            } catch (e) {
-                console.error("關閉相機異常", e);
-            } finally {
-                html5QrcodeScanner = null;
-                isProcessing = false;
-                isCameraChanging = false;
-                document.getElementById('loadingStatus').style.display = 'none';
+        // 3. 店員重呼
+        function recallNumber() {
+            if (currentCalled > 0) {
+                speakNumber(currentCalled);
+            } else {
+                alert("尚未開始叫號！");
             }
         }
 
-        async function startAdvancedScanner() {
-            if (html5QrcodeScanner) await stopScanner();
+        // 更新所有屏幕和數據顯示
+        function updateDisplay() {
+            // 更新叫號屏幕
+            document.getElementById('screenNumber').innerText = currentCalled > 0 ? currentCalled : "--";
+            // 更新店員面板數據
+            document.getElementById('totalTickets').innerText = totalIssued;
             
-            isCameraChanging = true;
-            html5QrcodeScanner = new Html5Qrcode("preview");
-            
-            const config = {
-                fps: 25, 
-                aspectRatio: 1.0,
-                qrbox: function(vw, vh) {
-                    const size = Math.min(vw, vh) * 0.65;
-                    return { width: size, height: size };
-                }
-            };
-
-            try {
-                await html5QrcodeScanner.start(
-                    { facingMode: "environment" }, 
-                    config,
-                    onScanSuccess
-                );
-            } catch (err) {
-                console.error(err);
-                try {
-                    await html5QrcodeScanner.start({ facingMode: "user" }, config, onScanSuccess);
-                } catch(e) {
-                    alert("無法啟動相機。");
-                }
-            } finally {
-                isCameraChanging = false; 
-            }
+            let waiting = totalIssued - currentCalled;
+            document.getElementById('waitingCount').innerText = waiting >= 0 ? waiting : 0;
         }
 
-        function onScanSuccess(decodedText) {
-            if (isProcessing) return; 
-            isProcessing = true; 
-
-            let checkedRecords = [];
-            try {
-                checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
-            } catch (e) {
-                console.error("讀取本地儲存失敗", e);
-            }
-
-            // 1. 驗證是否為無效二維碼
-            if (!employees[decodedText]) {
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
+        // 語音播報功能（自動識別廣東話/華語，這裡預設廣東話）
+        function speakNumber(num) {
+            if ('speechSynthesis' in window) {
+                // 先停止之前正在播報的聲音
+                window.speechSynthesis.cancel();
                 
-                setTimeout(() => {
-                    alert(`❌ 該二維碼無效！\n\n內容："${decodedText}"\n非系統認證的員工工號。`);
-                    isProcessing = false; 
-                }, 100);
-                return;
+                let text = `請 ${num} 號到櫃檯`;
+                let utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-HK'; // 廣東話發音 (如需普通話可改為 zh-CN)
+                utterance.rate = 0.9;     // 語速稍微減慢一點
+                window.speechSynthesis.speak(utterance);
             }
+        }
 
-            // 2. 驗證是否重複簽到
-            if (checkedRecords.includes(decodedText)) {
-                if (navigator.vibrate) navigator.vibrate([200]); 
-                setTimeout(() => {
-                    alert(`⚠️ 已簽到，掃描無效！\n\n【${employees[decodedText]}】今日已有簽到紀錄，請勿重複發送。`);
-                    isProcessing = false; 
-                }, 100);
-                return;
+        // 重置系統
+        function resetSystem() {
+            if (confirm("確定要將所有號碼清零重置嗎？")) {
+                currentCalled = 0;
+                totalIssued = 0;
+                localStorage.clear();
+                document.getElementById('ticketDisplay').style.display = 'none';
+                updateDisplay();
             }
-
-            // 3. 通過驗證，執行正確簽到
-            sendToGoogleSheets(decodedText, employees[decodedText]);
         }
-
-        // 💡 優化：改用標準 URLSearchParams 表單編碼格式打包 POST 數據
-        function sendToGoogleSheets(id, name) {
-            document.getElementById('loadingStatus').style.display = 'block';
-            if (navigator.vibrate) navigator.vibrate(100); 
-
-            const formData = new URLSearchParams();
-            formData.append('id', id);
-            formData.append('name', name);
-
-            fetch(GAS_URL, {
-                method: "POST",
-                mode: "no-cors", 
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: formData.toString()
-            })
-            .then(() => {
-                document.getElementById('loadingStatus').style.display = 'none';
-                
-                try {
-                    let checkedRecords = JSON.parse(localStorage.getItem("checked_employees") || "[]");
-                    checkedRecords.push(id);
-                    localStorage.setItem("checked_employees", JSON.stringify(checkedRecords));
-                } catch (e) {
-                    console.error("寫入本地儲存失敗", e);
-                }
-
-                setTimeout(() => {
-                    alert(`🟢 簽到成功！\n姓名：${name}\n數據已成功寫入 Google 試算表。`);
-                    isProcessing = false; 
-                }, 100);
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('loadingStatus').style.display = 'none';
-                setTimeout(() => {
-                    alert("網路異常，寫入失敗。");
-                    isProcessing = false; 
-                }, 100);
-            });
-        }
-
-        function clearRecords() {
-            localStorage.removeItem("checked_employees");
-            alert("🧹 紀錄已清除！可以重新測試重複簽到。");
-        }
-
-        window.onload = generateUserQR;
     </script>
 </body>
 </html>
