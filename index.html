@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>挺豪餐廳 - 在線排隊</title>
+    <title>挺豪餐廳 - 智能隨身系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script type="importmap">
       {
         "imports": {
@@ -14,82 +15,74 @@
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: #121212; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; transition: background 0.2s; }
-        .rest-name { font-size: 2.2rem; font-weight: 700; color: #d4af37; letter-spacing: 4px; margin-bottom: 20px; margin-top: 20px; text-align: center; }
+        body { background: #121212; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; text-align: center; }
+        .brand { font-size: 2.2rem; font-weight: 700; color: #d4af37; letter-spacing: 4px; margin: 20px 0; }
+        .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 30px; width: 100%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.5); }
         
-        /* 高級感選擇人數區 */
-        #selectPhase { width: 100%; text-align: center; }
+        /* 階段一：選擇人數 */
+        #selectPhase { display: block; }
         .info-header { font-size: 1.1rem; color: #a0aec0; margin-bottom: 30px; letter-spacing: 2px; }
-        .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; max-width: 400px; margin: 0 auto; }
-        .num-btn { background: #1a1a1a; border: 1px solid #333; color: white; font-size: 1.8rem; height: 65px; border-radius: 12px; cursor: pointer; transition: 0.1s; font-weight: bold; }
-        .num-btn:active { background: #d4af37; border-color: #d4af37; color: #121212; }
+        .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; }
+        .num-btn { background: #262626; border: 1px solid #3d3d3d; color: white; font-size: 1.8rem; height: 65px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        .num-btn:active { background: #d4af37; color: #121212; }
 
-        /* 保存號碼區 (排隊中) */
-        #statusPhase { display: none; width: 100%; text-align: center; margin-top: 30px; }
-        .ticket-status-label { font-size: 1rem; color: #a0aec0; letter-spacing: 2px; }
-        .ticket-num { font-size: 6rem; font-weight: 700; color: #ffffff; letter-spacing: 2px; margin: 20px 0; font-family: monospace; text-shadow: 0 0 15px rgba(255,255,255,0.2); }
-        .current-queue-info { font-size: 0.95rem; color: #666; max-width: 300px; margin: 30px auto; line-height: 1.6; }
+        /* 階段二：排隊中 + 專屬二維碼 */
+        #queuePhase { display: none; }
+        .ticket-label { font-size: 1rem; color: #a0aec0; letter-spacing: 1px; }
+        .ticket-num { font-size: 4.5rem; font-weight: 700; color: #ffffff; margin: 10px 0; font-family: monospace; }
+        #qrcode { display: inline-block; background: white; padding: 12px; border-radius: 12px; margin: 15px 0; }
+        
+        /* 階段三：已用餐 + 1小時30分鐘倒數 */
+        #diningPhase { display: none; }
+        .dining-status { font-size: 2rem; font-weight: bold; color: #e53e3e; letter-spacing: 2px; margin-bottom: 5px; }
+        .countdown { font-size: 5rem; font-weight: 700; color: #ffffff; font-family: monospace; margin: 20px 0; text-shadow: 0 0 15px rgba(229,62,62,0.4); }
 
-        /* 🔥 紅色叫號提醒區域 🔥 */
-        #callingPhase { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #e53e3e; justify-content: center; align-items: center; z-index: 999; animation: flashRed 0.6s infinite alternate; }
-        @keyframes flashRed { 0% { background: #e53e3e; } 100% { background: #c53030; } }
-        .alert-content { text-align: center; color: white; padding: 20px; }
-        .alert-title { font-size: 2.2rem; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .alert-num { font-size: 7rem; font-weight: bold; margin-bottom: 30px; }
-        .btn-ack { background: white; color: #e53e3e; font-size: 1.4rem; padding: 15px 40px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-
-        /* 手機功能開啟提示彈窗 */
-        .setting-tip { display: none; background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 15px; border-radius: 10px; margin-bottom: 20px; width: 100%; font-size: 0.9rem; color: #fbd38d; text-align: center; }
+        .footer-tip { font-size: 0.9rem; color: #555; margin-top: 20px; line-height: 1.6; }
     </style>
 </head>
 <body>
 
-    <div class="rest-name">挺豪餐廳</div>
+    <div class="brand">挺豪餐廳</div>
 
-    <div class="setting-tip" id="settingTip">
-        建議：開啟瀏覽器「通知/震動」功能以獲得叫號提示
-    </div>
-
-    <div id="selectPhase">
-        <div class="info-header">在線登記 / 請選擇人數</div>
-        <div class="num-grid">
-            <button class="num-btn" onclick="takeTicket(1)">1</button>
-            <button class="num-btn" onclick="takeTicket(2)">2</button>
-            <button class="num-btn" onclick="takeTicket(3)">3</button>
-            <button class="num-btn" onclick="takeTicket(4)">4</button>
-            <button class="num-btn" onclick="takeTicket(5)">5</button>
+    <div class="card">
+        <div id="selectPhase">
+            <div class="info-header">歡迎光臨，請選擇到訪人數</div>
+            <div class="num-grid">
+                <button class="num-btn" onclick="takeTicket(1)">1</button>
+                <button class="num-btn" onclick="takeTicket(2)">2</button>
+                <button class="num-btn" onclick="takeTicket(3)">3</button>
+                <button class="num-btn" onclick="takeTicket(4)">4</button>
+                <button class="num-btn" onclick="takeTicket(5)">5</button>
+            </div>
+            <div class="footer-tip">1人:A組 | 2-3人:B組 | 4-5人:C組</div>
         </div>
-        <div class="current-queue-info" style="margin-top: 50px; color: #555;">
-            1人:A｜2-3人:B｜4-5人:C<br>
-            叫號後請於 10 分鐘內前往櫃檯。
-        </div>
-    </div>
 
-    <div id="statusPhase">
-        <div class="ticket-status-label">您的專屬號碼</div>
-        <div class="ticket-num" id="savedNum">---</div>
-        <div style="font-size: 1.2rem; color: #48bb78; margin-top: 10px; display: none;" id="queueSuccess">✅ 登記成功</div>
-        <div class="current-queue-info">
-            請保存此畫面。當您的號碼被叫到時，手機會變紅並發聲提醒。<br>
-            若系統重置或過號，號碼將自動清空。
+        <div id="queuePhase">
+            <div class="ticket-label">您的排隊號碼</div>
+            <div class="ticket-num" id="queueNumDisplay">A---</div>
+            <hr style="border: 0; border-top: 1px dashed #333; margin: 15px 0;">
+            <div class="ticket-label" style="color: #d4af37;">請向店員出示此專屬二維碼入座</div>
+            
+            <div id="qrcode"></div>
+            
+            <div class="footer-tip">當大屏幕叫到您的號碼時，請前來櫃檯由店員掃描此二維碼安排入座。</div>
         </div>
-    </div>
 
-    <div id="callingPhase">
-        <div class="alert-content">
-            <div class="alert-title">📢 請前往櫃檯</div>
-            <div class="alert-num" id="alertNum">A001</div>
-            <button class="btn-ack" onclick="acknowledgeCall()">知道了</button>
+        <div id="diningPhase">
+            <div class="dining-status">已用餐</div>
+            <div style="color: #a0aec0; font-size: 1rem;">限時：1 小時 30 分鐘</div>
+            <div class="countdown" id="timerDisplay">90:00</div>
+            <div class="footer-tip" style="color: #718096;">
+                請盡情享受您的美食。<br>
+                離店時請配合店員再次掃碼重置，或時限到期後網頁會自動清空。
+            </div>
         </div>
     </div>
-
-    <audio id="beepAudio" preload="auto" src="https://cdn.pixabay.com/audio/2022/10/25/audio_b28290e447.mp3"></audio>
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getDatabase, ref, onValue, runTransaction, get } from "firebase/database";
+        import { getDatabase, ref, onValue, runTransaction, set } from "firebase/database";
 
-        // Firebase 沿用你的設定
         const firebaseConfig = {
             apiKey: "AIzaSyDwUF4-rBRG9QGyti2_Smx_PRZ8sZOZL0A",
             authDomain: "my-queue-system-3bcc5.firebaseapp.com",
@@ -102,84 +95,68 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        // 建立或讀取本手機唯一的識別碼 UID
+        let myUID = localStorage.getItem('t_restaurant_combination_uid');
+        if (!myUID) {
+            myUID = 'USER_' + Date.now() + Math.floor(Math.random() * 1000);
+            localStorage.setItem('t_restaurant_combination_uid', myUID);
+        }
+
+        let qrcodeObj = null;
+        let timerInterval = null;
+        let localTicketNumber = localStorage.getItem('t_restaurant_saved_ticket'); // 緩存號碼
+
+        // 初始化檢查
+        const myNodeRef = ref(db, `comboSystem/${myUID}`);
         
-        let localTicket = localStorage.getItem('my_t_restaurant_num'); // 本地保存的號碼 (例如 A001)
-        let isCalling = false; // 是否正在紅色提醒
-        let isFirstLoad = true;
-
-        const beepAudio = document.getElementById('beepAudio');
-
-        // 頁面載入時檢查狀態
-        checkStatus();
-        listenToQueue();
-
-        function checkStatus() {
-            if (localTicket) {
-                // 手機已經有號碼
-                document.getElementById('selectPhase').style.display = 'none';
-                document.getElementById('statusPhase').style.display = 'block';
-                document.getElementById('savedNum').innerText = localTicket;
-                document.getElementById('settingTip').style.display = 'none';
-            } else {
-                // 沒有號碼，顯示選擇
+        // 監聽此 UID 的雲端狀態變化
+        onValue(myNodeRef, (snapshot) => {
+            const data = snapshot.val();
+            
+            if (!data) {
+                // 雲端無資料（待機狀態或已被店員重置離開）
+                clearInterval(timerInterval);
+                localStorage.removeItem('t_restaurant_saved_ticket');
+                localTicketNumber = null;
+                
                 document.getElementById('selectPhase').style.display = 'block';
-                document.getElementById('statusPhase').style.display = 'none';
-                document.getElementById('settingTip').style.display = 'block';
+                document.getElementById('queuePhase').style.display = 'none';
+                document.getElementById('diningPhase').style.display = 'none';
+            } 
+            else if (data.status === "waiting") {
+                // 已選人數排隊中，顯示專屬 QR 碼
+                document.getElementById('selectPhase').style.display = 'none';
+                document.getElementById('queuePhase').style.display = 'block';
+                document.getElementById('diningPhase').style.display = 'none';
+                
+                document.getElementById('queueNumDisplay').innerText = data.ticketNumber;
+                
+                // 繪製或更新二維碼（內含我們的 UID）
+                if (!qrcodeObj) {
+                    qrcodeObj = new QRCode(document.getElementById("qrcode"), {
+                        text: myUID, width: 180, height: 180
+                    });
+                }
+            } 
+            else if (data.status === "dining") {
+                // 店員已掃描並點擊確認入座 ➡️ 進入用餐倒數
+                document.getElementById('selectPhase').style.display = 'none';
+                document.getElementById('queuePhase').style.display = 'none';
+                document.getElementById('diningPhase').style.display = 'block';
+                
+                startCountdown(data.startTime);
             }
-        }
+        });
 
-        // 監聽雲端叫號 (所有人)
-        function listenToQueue() {
-            onValue(ref(db, 'queueSystem'), (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
-
-                // 檢查是否全體重置（店員按了清零）
-                if (data.isGlobalReset === true && !isFirstLoad) {
-                    // 清空本地手機號碼，恢復選擇畫面
-                    if (localStorage.getItem('my_t_restaurant_num')) {
-                        clearMyNumber();
-                    }
-                    isFirstLoad = false;
-                    return;
-                }
-
-                // 檢查是否叫到「我本地的手機號碼」
-                if (localTicket && !isCalling) {
-                    const myGroup = localTicket.substring(0, 1); // 例如 "A"
-                    const myNumStr = localTicket.substring(1);    // 例如 "001"
-                    const myNumVal = parseInt(myNumStr);       // 例如 1
-
-                    // 雲端上我這組叫到多少號？
-                    const calledNumVal = data[myGroup]?.currentCalled || 0;
-
-                    // ⚠️🔥🔥🔥🔥🔥🔥【關鍵：提醒邏輯】🔥🔥🔥🔥🔥🔥⚠️
-                    if (calledNumVal === myNumVal) {
-                        isCalling = true;
-                        // 1. 手機變紅並閃爍 (透過 CSS)
-                        document.getElementById('callingPhase').style.display = 'flex';
-                        document.getElementById('alertNum').innerText = localTicket;
-                        
-                        // 2. 觸發震動
-                        if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
-                        
-                        // 3. 播放叫號音 (需要手機解除靜音，部分手機因限制需點擊才能播)
-                        beepAudio.play().catch(e=>console.log("Audio limited", e));
-                    }
-                }
-                isFirstLoad = false;
-            });
-        }
-
-        // 客人手機取號
+        // 選擇人數、獲取號碼、並在雲端綁定 UID 
         window.takeTicket = function(guests) {
             let type = 'A';
             if (guests === 1) type = 'A';
-            else if (guests >= 2 && guests <= 3) type = 'B';
-            else if (guests >= 4 && guests <= 5) type = 'C';
+            else if (guests === 2 || guests === 3) type = 'B';
+            else if (guests === 4 || guests === 5) type = 'C';
 
-            beepAudio.play().catch(e=>e); // 點擊時先嘗試「解鎖」音頻權限
-
+            // 先去傳統叫號庫獲取組別最新號碼
             const totalRef = ref(db, `queueSystem/${type}/totalIssued`);
             runTransaction(totalRef, (current) => {
                 return (current || 0) + 1;
@@ -188,37 +165,38 @@
                     const num = result.snapshot.val();
                     const formattedNum = type + String(num).padStart(3, '0');
                     
-                    // 💾 將號碼永久保存到客人手機的瀏覽器 LocalStorage
-                    localStorage.setItem('my_t_restaurant_num', formattedNum);
-                    localTicket = formattedNum;
+                    localStorage.setItem('t_restaurant_saved_ticket', formattedNum);
                     
-                    checkStatus(); // 更新畫面
-                    
-                    // 顯示登記成功 2秒
-                    const sRef = document.getElementById('queueSuccess');
-                    sRef.style.display = 'block';
-                    setTimeout(()=> sRef.style.display = 'none', 2000);
+                    // 將狀態與號碼綁定推送到新系統 `comboSystem/${myUID}`
+                    set(myNodeRef, {
+                        status: "waiting",
+                        ticketNumber: formattedNum,
+                        guestsCount: guests
+                    });
                 }
-            }).catch((err) => {
-                console.error(err);
-                alert("登記失敗，請掃碼重試。");
             });
         };
 
-        // 按了知道了 (紅色提醒消失)
-        window.acknowledgeCall = function() {
-            beepAudio.pause();
-            if (navigator.vibrate) navigator.vibrate(0);
-            document.getElementById('callingPhase').style.display = 'none';
-            // isCalling 保持 true，直到客人前往櫃檯
-        };
+        // 1小時30分鐘倒數計時核心（90分鐘 = 5400秒）
+        function startCountdown(startTime) {
+            clearInterval(timerInterval);
+            const totalLimitSeconds = 90 * 60;
 
-        // 【重置邏輯：清空我本地的號碼】
-        function clearMyNumber() {
-            localStorage.removeItem('my_t_restaurant_num');
-            localTicket = null;
-            isCalling = false;
-            checkStatus();
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const elapsed = Math.floor((now - startTime) / 1000);
+                const remaining = totalLimitSeconds - elapsed;
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    set(myNodeRef, null); // 時間到，自動刪除資料，兩端重置回到人數選擇
+                } else {
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    document.getElementById('timerDisplay').innerText = 
+                        String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+                }
+            }, 1000);
         }
     </script>
 </body>
