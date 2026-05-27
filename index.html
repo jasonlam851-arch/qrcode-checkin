@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>挺豪餐廳</title>
+    <title>TH RESTAURANT</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script type="importmap">
       {
@@ -14,56 +14,56 @@
       }
     </script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
-        body { background: #121212; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; text-align: center; }
-        .brand { font-size: 2.2rem; font-weight: 700; color: #d4af37; letter-spacing: 4px; margin: 20px 0; }
-        .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 30px; width: 100%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.5); position: relative; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #0a0a0c; color: #e4e4e7; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 24px; text-align: center; }
+        .brand { font-size: 2rem; font-weight: 800; color: #d4af37; letter-spacing: 5px; margin: 30px 0; text-transform: uppercase; }
+        .card { background: #121214; border: 1px solid #232326; border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); position: relative; }
         
-        .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; }
-        .num-btn { background: #262626; border: 1px solid #3d3d3d; color: white; font-size: 1.8rem; height: 65px; border-radius: 12px; cursor: pointer; font-weight: bold; }
-        .num-btn:disabled { background: #1a1a1a; color: #555; border-color: #222; cursor: not-allowed; }
-        .full-label { color: #ef4444; font-size: 0.8rem; margin-top: 4px; display: none; }
+        .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; }
+        .num-btn { background: #1c1c1f; border: 1px solid #323238; color: #ffffff; font-size: 1.6rem; height: 60px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: all 0.2s; }
+        .num-btn:active { background: #d4af37; color: #0a0a0c; }
+        .num-btn:disabled { background: #0f0f11; color: #3f3f46; border-color: #1c1c1f; cursor: not-allowed; }
+        .full-label { color: #ef4444; font-size: 0.75rem; margin-top: 4px; font-weight: 600; display: none; }
 
         #qrContainer { display: none; }
-        .ticket-num { font-size: 4.5rem; font-weight: 700; color: #ffffff; margin: 10px 0; font-family: monospace; }
-        #qrcode { display: inline-block; background: white; padding: 12px; border-radius: 12px; margin: 15px 0; }
+        .ticket-num { font-size: 4.5rem; font-weight: 800; color: #ffffff; margin: 8px 0; font-family: monospace; letter-spacing: -1px; }
+        .qr-wrapper { display: inline-block; background: #ffffff; padding: 12px; border-radius: 8px; margin: 20px 0; min-width: 184px; min-height: 184px; }
         
-        .blink-red { animation: flashRed 0.5s infinite alternate; }
-        @keyframes flashRed { from { background: #1a1a1a; } to { background: #741b1b; border-color: #e53e3e; } }
-        .call-msg { display: none; color: #e53e3e; font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; }
+        .status-alert { display: none; color: #ef4444; font-weight: 700; font-size: 1.1rem; margin-bottom: 12px; letter-spacing: 1px; }
+        .blink-border { animation: flashBorder 0.6s infinite alternate; }
+        @keyframes flashBorder { from { border-color: #232326; box-shadow: 0 20px 40px rgba(0,0,0,0.6); } to { border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); } }
 
-        #countdownArea { display: none; margin-top: 10px; }
-        .countdown { font-size: 3.5rem; font-weight: 700; color: #e53e3e; font-family: monospace; }
+        #countdownArea { display: none; margin-top: 15px; }
+        .countdown { font-size: 3.8rem; font-weight: 800; color: #ef4444; font-family: monospace; }
 
-        /* 修改與取消按鈕樣式 */
-        .action-bar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
-        .btn-action { padding: 6px 14px; font-size: 0.85rem; font-weight: bold; border-radius: 6px; border: 1px solid #444; background: #262626; color: #cbd5e1; cursor: pointer; }
-        .btn-cancel { border-color: #741b1b; color: #fca5a5; }
+        .action-bar { display: flex; gap: 12px; margin-bottom: 20px; justify-content: center; }
+        .btn-action { padding: 8px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; border: 1px solid #3f3f46; background: #1c1c1f; color: #d4d4d8; cursor: pointer; }
+        .btn-cancel { border-color: #7f1d1d; color: #fca5a5; background: #451a1a; }
 
         #thanksPhase { display: none; }
-        .thanks-txt { font-size: 1.8rem; font-weight: bold; color: #d4af37; margin: 40px 0; line-height: 1.6; }
-        .footer-tip { font-size: 0.85rem; color: #555; margin-top: 15px; }
+        .thanks-txt { font-size: 1.6rem; font-weight: 700; color: #d4af37; margin: 50px 0; line-height: 1.8; letter-spacing: 1px; }
+        .footer-tip { font-size: 0.8rem; color: #52525b; margin-top: 20px; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
 
-    <div class="brand">挺豪餐廳</div>
+    <div class="brand">TH Restaurant</div>
 
     <div class="card" id="thanksPhase">
-        <div class="thanks-txt">用餐完畢<br>期待你下一次的到來</div>
+        <div class="thanks-txt">THANK YOU<br>用餐完畢<br>期待您再次光臨</div>
     </div>
 
     <div class="card" id="mainCard">
         <div id="selectPhase" style="display: none;">
-            <div style="font-size: 1.1rem; color: #a0aec0; margin-bottom: 15px;">歡迎光臨，請選擇到訪人數</div>
+            <div style="font-size: 1rem; color: #a1a1aa; letter-spacing: 1px;">請選擇到訪人數 / GUESTS</div>
             <div class="num-grid">
-                <div><button class="num-btn" id="btnG1" onclick="takeTicket(1)">1</button><div class="full-label" id="lblG1">已滿</div></div>
-                <div><button class="num-btn" id="btnG2" onclick="takeTicket(2)">2</button><div class="full-label" id="lblG2">已滿</div></div>
-                <div><button class="num-btn" id="btnG3" onclick="takeTicket(3)">3</button><div class="full-label" id="lblG3">已滿</div></div>
-                <div><button class="num-btn" id="btnG4" onclick="takeTicket(4)">4</button><div class="full-label" id="lblG4">已滿</div></div>
-                <div><button class="num-btn" id="btnG5" onclick="takeTicket(5)">5</button><div class="full-label" id="lblG5">已滿</div></div>
+                <div><button class="num-btn" id="btnG1" onclick="takeTicket(1)">1</button><div class="full-label" id="lblG1">FULL</div></div>
+                <div><button class="num-btn" id="btnG2" onclick="takeTicket(2)">2</button><div class="full-label" id="lblG2">FULL</div></div>
+                <div><button class="num-btn" id="btnG3" onclick="takeTicket(3)">3</button><div class="full-label" id="lblG3">FULL</div></div>
+                <div><button class="num-btn" id="btnG4" onclick="takeTicket(4)">4</button><div class="full-label" id="lblG4">FULL</div></div>
+                <div><button class="num-btn" id="btnG5" onclick="takeTicket(5)">5</button><div class="full-label" id="lblG5">FULL</div></div>
             </div>
-            <div class="footer-tip">每組排隊人數上限為 10 人，超出系統將自動暫時封閉。</div>
+            <div class="footer-tip">A: 1人 | B: 2-3人 | C: 4-5人</div>
         </div>
 
         <div id="qrContainer">
@@ -72,17 +72,17 @@
                 <button class="btn-action btn-cancel" onclick="cancelQueue()">取消排隊</button>
             </div>
 
-            <div class="call-msg" id="callMsg">📢 請即前往櫃檯入座！</div>
-            <div style="color: #a0aec0; font-size: 0.9rem;" id="stateLabel">您的排隊號碼</div>
+            <div class="status-alert" id="callMsg">請即前往櫃檯入座</div>
+            <div style="color: #a1a1aa; font-size: 0.85rem; letter-spacing: 1px;" id="stateLabel">您的排隊號碼</div>
             <div class="ticket-num" id="ticketDisplay">---</div>
             
-            <div id="qrcode"></div>
+            <div class="qr-wrapper"><div id="qrcode"></div></div>
             
             <div id="countdownArea">
-                <div style="color: #a0aec0; font-size: 0.9rem;">用餐剩餘時間</div>
+                <div style="color: #a1a1aa; font-size: 0.85rem; letter-spacing: 1px;">用餐剩餘時間 / TIME REMAINING</div>
                 <div class="countdown" id="timerDisplay">90:00</div>
             </div>
-            <div class="footer-tip" id="qrFooter">請向工作人員出示此二維碼。</div>
+            <div class="footer-tip" id="qrFooter">請於櫃檯出示此二維碼核對身分。</div>
         </div>
     </div>
 
@@ -116,6 +116,16 @@
 
         onValue(ref(db, ".info/serverTimeOffset"), (snapshot) => { serverOffset = snapshot.val() || 0; });
 
+        // 🔥 解決點Bug的核心：在生命週期之初直接初始化 QRCode，避免在異步渲染裡重複建立與清空
+        window.addEventListener('DOMContentLoaded', () => {
+            qrcodeObj = new QRCode(document.getElementById("qrcode"), {
+                text: myUID,
+                width: 160,
+                height: 160,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        });
+
         const myNodeRef = ref(db, `comboSystem/${myUID}`);
 
         onValue(ref(db), (snapshot) => {
@@ -123,13 +133,11 @@
             const data = root.comboSystem?.[myUID];
             const queueData = root.queueSystem || {};
 
-            // 1. 🔥 計算各組當前正在排隊的人數（總取號 - 已叫號），用於 >10 人熔斷封閉
+            // 1. 熔斷監聽（限制每組候位上限10人）
             ['A', 'B', 'C'].forEach(g => {
                 const total = queueData[g]?.totalIssued || 0;
                 const called = queueData[g]?.currentCalled || 0;
-                const waitingCount = total - called;
-                const isFull = waitingCount >= 10;
-
+                const isFull = (total - called) >= 10;
                 if (g === 'A') {
                     document.getElementById('btnG1').disabled = isFull; document.getElementById('lblG1').style.display = isFull ? 'block' : 'none';
                 } else if (g === 'B') {
@@ -141,7 +149,7 @@
                 }
             });
 
-            // 2. 處理離店（dining -> null）
+            // 2. 狀態路由判定
             if (lastStatus === "dining" && !data) {
                 lastStatus = null; clearInterval(timerInterval); showThanksPage(); return;
             }
@@ -150,7 +158,7 @@
                 lastStatus = null;
                 document.getElementById('selectPhase').style.display = 'block';
                 document.getElementById('qrContainer').style.display = 'none';
-                document.getElementById('mainCard').classList.remove('blink-red');
+                document.getElementById('mainCard').classList.remove('blink-border');
                 document.getElementById('callMsg').style.display = 'none';
                 return;
             }
@@ -164,24 +172,18 @@
                 document.getElementById('stateLabel').innerText = "您的排隊號碼";
                 document.getElementById('ticketDisplay').innerText = data.ticketNumber;
 
-                if (!qrcodeObj) {
-                    document.getElementById("qrcode").innerHTML = "";
-                    qrcodeObj = new QRCode(document.getElementById("qrcode"), { text: myUID, width: 160, height: 160 });
-                }
-
                 const myGroup = data.ticketNumber.substring(0, 1);
                 const myNum = parseInt(data.ticketNumber.substring(1));
                 const currentCalled = queueData[myGroup]?.currentCalled || 0;
 
                 if (currentCalled === myNum) {
-                    // 📢 叫號中：閃爍紅色提示，但「取消/修改」功能強制隱藏
-                    document.getElementById('mainCard').classList.add('blink-red');
+                    document.getElementById('mainCard').classList.add('blink-border');
                     document.getElementById('callMsg').style.display = 'block';
                     document.getElementById('queueActionBar').style.display = 'none';
                 } else {
-                    document.getElementById('mainCard').classList.remove('blink-red');
+                    document.getElementById('mainCard').classList.remove('blink-border');
                     document.getElementById('callMsg').style.display = 'none';
-                    document.getElementById('queueActionBar').style.display = 'flex'; // 候位中，允許修改或取消
+                    document.getElementById('queueActionBar').style.display = 'flex';
                 }
             } 
             else if (data.status === "dining") {
@@ -189,10 +191,10 @@
                 document.getElementById('qrContainer').style.display = 'block';
                 document.getElementById('countdownArea').style.display = 'block';
                 document.getElementById('queueActionBar').style.display = 'none';
-                document.getElementById('mainCard').classList.remove('blink-red');
+                document.getElementById('mainCard').classList.remove('blink-border');
                 document.getElementById('callMsg').style.display = 'none';
                 
-                document.getElementById('stateLabel').innerText = "正在用餐 (二維碼已常駐)";
+                document.getElementById('stateLabel').innerText = "正在用餐 (二維碼授權常駐)";
                 document.getElementById('ticketDisplay').innerText = data.ticketNumber;
 
                 startSynchronizedClock(data.startTime);
@@ -215,29 +217,15 @@
             });
         };
 
-        // 更改人數邏輯
-        window.changeGuests = function() {
-            if (confirm("修改人數將會重新排隊獲取新號碼，確定嗎？")) {
-                set(myNodeRef, null);
-            }
-        };
-
-        // 取消排隊邏輯
-        window.cancelQueue = function() {
-            if (confirm("確定要取消本次排隊預約嗎？")) {
-                set(myNodeRef, null);
-            }
-        };
+        window.changeGuests = function() { if (confirm("更改人數需重新抽取號碼，是否確定？")) set(myNodeRef, null); };
+        window.cancelQueue = function() { if (confirm("是否確定取消本次排隊？")) set(myNodeRef, null); };
 
         function startSynchronizedClock(serverStartTime) {
             clearInterval(timerInterval);
-            const totalSec = 90 * 60;
             timerInterval = setInterval(() => {
-                const elapsedSec = Math.floor(((Date.now() + serverOffset) - serverStartTime) / 1000);
-                const remain = totalSec - elapsedSec;
-                if (remain <= 0) {
-                    clearInterval(timerInterval); set(myNodeRef, null);
-                } else {
+                const remain = (90 * 60) - Math.floor(((Date.now() + serverOffset) - serverStartTime) / 1000);
+                if (remain <= 0) { clearInterval(timerInterval); set(myNodeRef, null); } 
+                else {
                     const m = Math.floor(remain / 60); const s = remain % 60;
                     document.getElementById('timerDisplay').innerText = String(m).padStart(2,'0') + ":" + String(s).padStart(2,'0');
                 }
