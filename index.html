@@ -19,10 +19,11 @@
         .brand { font-size: 2.2rem; font-weight: 700; color: #d4af37; letter-spacing: 4px; margin: 20px 0; }
         .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 30px; width: 100%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.5); position: relative; }
         
-        #selectPhase { display: block; }
-        .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; }
         .num-btn { background: #262626; border: 1px solid #3d3d3d; color: white; font-size: 1.8rem; height: 65px; border-radius: 12px; cursor: pointer; font-weight: bold; }
-        
+        .num-btn:disabled { background: #1a1a1a; color: #555; border-color: #222; cursor: not-allowed; }
+        .full-label { color: #ef4444; font-size: 0.8rem; margin-top: 4px; display: none; }
+
         #qrContainer { display: none; }
         .ticket-num { font-size: 4.5rem; font-weight: 700; color: #ffffff; margin: 10px 0; font-family: monospace; }
         #qrcode { display: inline-block; background: white; padding: 12px; border-radius: 12px; margin: 15px 0; }
@@ -33,6 +34,11 @@
 
         #countdownArea { display: none; margin-top: 10px; }
         .countdown { font-size: 3.5rem; font-weight: 700; color: #e53e3e; font-family: monospace; }
+
+        /* 修改與取消按鈕樣式 */
+        .action-bar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
+        .btn-action { padding: 6px 14px; font-size: 0.85rem; font-weight: bold; border-radius: 6px; border: 1px solid #444; background: #262626; color: #cbd5e1; cursor: pointer; }
+        .btn-cancel { border-color: #741b1b; color: #fca5a5; }
 
         #thanksPhase { display: none; }
         .thanks-txt { font-size: 1.8rem; font-weight: bold; color: #d4af37; margin: 40px 0; line-height: 1.6; }
@@ -48,27 +54,32 @@
     </div>
 
     <div class="card" id="mainCard">
-        <div id="selectPhase">
-            <div style="font-size: 1.1rem; color: #a0aec0; margin-bottom: 30px;">歡迎光臨，請選擇到訪人數</div>
+        <div id="selectPhase" style="display: none;">
+            <div style="font-size: 1.1rem; color: #a0aec0; margin-bottom: 15px;">歡迎光臨，請選擇到訪人數</div>
             <div class="num-grid">
-                <button class="num-btn" onclick="takeTicket(1)">1</button>
-                <button class="num-btn" onclick="takeTicket(2)">2</button>
-                <button class="num-btn" onclick="takeTicket(3)">3</button>
-                <button class="num-btn" onclick="takeTicket(4)">4</button>
-                <button class="num-btn" onclick="takeTicket(5)">5</button>
+                <div><button class="num-btn" id="btnG1" onclick="takeTicket(1)">1</button><div class="full-label" id="lblG1">已滿</div></div>
+                <div><button class="num-btn" id="btnG2" onclick="takeTicket(2)">2</button><div class="full-label" id="lblG2">已滿</div></div>
+                <div><button class="num-btn" id="btnG3" onclick="takeTicket(3)">3</button><div class="full-label" id="lblG3">已滿</div></div>
+                <div><button class="num-btn" id="btnG4" onclick="takeTicket(4)">4</button><div class="full-label" id="lblG4">已滿</div></div>
+                <div><button class="num-btn" id="btnG5" onclick="takeTicket(5)">5</button><div class="full-label" id="lblG5">已滿</div></div>
             </div>
-            <div class="footer-tip">1人:A組 | 2-3人:B組 | 4-5人:C組</div>
+            <div class="footer-tip">每組排隊人數上限為 10 人，超出系統將自動暫時封閉。</div>
         </div>
 
         <div id="qrContainer">
+            <div class="action-bar" id="queueActionBar">
+                <button class="btn-action" onclick="changeGuests()">修改人數</button>
+                <button class="btn-action btn-cancel" onclick="cancelQueue()">取消排隊</button>
+            </div>
+
             <div class="call-msg" id="callMsg">📢 請即前往櫃檯入座！</div>
             <div style="color: #a0aec0; font-size: 0.9rem;" id="stateLabel">您的排隊號碼</div>
-            <div class="ticket-num" id="ticketDisplay">A---</div>
+            <div class="ticket-num" id="ticketDisplay">---</div>
             
             <div id="qrcode"></div>
             
             <div id="countdownArea">
-                <div style="color: #a0aec0; font-size: 0.9rem;">用餐剩餘時間 (限時1.5小時)</div>
+                <div style="color: #a0aec0; font-size: 0.9rem;">用餐剩餘時間</div>
                 <div class="countdown" id="timerDisplay">90:00</div>
             </div>
             <div class="footer-tip" id="qrFooter">請向工作人員出示此二維碼。</div>
@@ -100,14 +111,10 @@
 
         let qrcodeObj = null;
         let timerInterval = null;
-        let voiceInterval = null;
         let lastStatus = null;
-        let serverOffset = 0; // 🔥 用於對齊雲端標準時差
+        let serverOffset = 0;
 
-        // 🟢 先精準估算手機與雲端伺服器的時差
-        onValue(ref(db, ".info/serverTimeOffset"), (snapshot) => {
-            serverOffset = snapshot.val() || 0;
-        });
+        onValue(ref(db, ".info/serverTimeOffset"), (snapshot) => { serverOffset = snapshot.val() || 0; });
 
         const myNodeRef = ref(db, `comboSystem/${myUID}`);
 
@@ -116,11 +123,27 @@
             const data = root.comboSystem?.[myUID];
             const queueData = root.queueSystem || {};
 
+            // 1. 🔥 計算各組當前正在排隊的人數（總取號 - 已叫號），用於 >10 人熔斷封閉
+            ['A', 'B', 'C'].forEach(g => {
+                const total = queueData[g]?.totalIssued || 0;
+                const called = queueData[g]?.currentCalled || 0;
+                const waitingCount = total - called;
+                const isFull = waitingCount >= 10;
+
+                if (g === 'A') {
+                    document.getElementById('btnG1').disabled = isFull; document.getElementById('lblG1').style.display = isFull ? 'block' : 'none';
+                } else if (g === 'B') {
+                    document.getElementById('btnG2').disabled = isFull; document.getElementById('lblG2').style.display = isFull ? 'block' : 'none';
+                    document.getElementById('btnG3').disabled = isFull; document.getElementById('lblG3').style.display = isFull ? 'block' : 'none';
+                } else if (g === 'C') {
+                    document.getElementById('btnG4').disabled = isFull; document.getElementById('lblG4').style.display = isFull ? 'block' : 'none';
+                    document.getElementById('btnG5').disabled = isFull; document.getElementById('lblG5').style.display = isFull ? 'block' : 'none';
+                }
+            });
+
+            // 2. 處理離店（dining -> null）
             if (lastStatus === "dining" && !data) {
-                lastStatus = null;
-                clearInterval(timerInterval);
-                showThanksPage();
-                return;
+                lastStatus = null; clearInterval(timerInterval); showThanksPage(); return;
             }
 
             if (!data) {
@@ -129,7 +152,6 @@
                 document.getElementById('qrContainer').style.display = 'none';
                 document.getElementById('mainCard').classList.remove('blink-red');
                 document.getElementById('callMsg').style.display = 'none';
-                clearInterval(voiceInterval);
                 return;
             }
 
@@ -142,54 +164,46 @@
                 document.getElementById('stateLabel').innerText = "您的排隊號碼";
                 document.getElementById('ticketDisplay').innerText = data.ticketNumber;
 
-                if (!qrcodeObj) qrcodeObj = new QRCode(document.getElementById("qrcode"), { text: myUID, width: 160, height: 160 });
+                if (!qrcodeObj) {
+                    document.getElementById("qrcode").innerHTML = "";
+                    qrcodeObj = new QRCode(document.getElementById("qrcode"), { text: myUID, width: 160, height: 160 });
+                }
 
                 const myGroup = data.ticketNumber.substring(0, 1);
                 const myNum = parseInt(data.ticketNumber.substring(1));
                 const currentCalled = queueData[myGroup]?.currentCalled || 0;
 
                 if (currentCalled === myNum) {
+                    // 📢 叫號中：閃爍紅色提示，但「取消/修改」功能強制隱藏
                     document.getElementById('mainCard').classList.add('blink-red');
                     document.getElementById('callMsg').style.display = 'block';
-                    if (!voiceInterval) {
-                        triggerPhoneVoice(myGroup, myNum);
-                        voiceInterval = setInterval(() => triggerPhoneVoice(myGroup, myNum), 6000);
-                    }
+                    document.getElementById('queueActionBar').style.display = 'none';
                 } else {
                     document.getElementById('mainCard').classList.remove('blink-red');
                     document.getElementById('callMsg').style.display = 'none';
-                    clearInterval(voiceInterval); voiceInterval = null;
+                    document.getElementById('queueActionBar').style.display = 'flex'; // 候位中，允許修改或取消
                 }
             } 
             else if (data.status === "dining") {
-                clearInterval(voiceInterval); voiceInterval = null;
                 document.getElementById('selectPhase').style.display = 'none';
                 document.getElementById('qrContainer').style.display = 'block';
                 document.getElementById('countdownArea').style.display = 'block';
+                document.getElementById('queueActionBar').style.display = 'none';
                 document.getElementById('mainCard').classList.remove('blink-red');
                 document.getElementById('callMsg').style.display = 'none';
                 
-                document.getElementById('stateLabel').innerText = "用餐桌號識別碼 (二維碼常駐)";
+                document.getElementById('stateLabel').innerText = "正在用餐 (二維碼已常駐)";
                 document.getElementById('ticketDisplay').innerText = data.ticketNumber;
 
                 startSynchronizedClock(data.startTime);
             }
         });
 
-        function triggerPhoneVoice(type, num) {
-            if ('speechSynthesis' in window) {
-                let groupStr = type === 'A' ? '一人 A' : type === 'B' ? '二至三人 B' : '四至五人 C';
-                let ut = new SpeechSynthesisUtterance(`請 ${groupStr} ${num} 號前來櫃檯入座`);
-                ut.lang = 'zh-HK'; window.speechSynthesis.speak(ut);
-            }
-        }
-
         window.takeTicket = function(guests) {
             let type = 'A';
             if (guests === 1) type = 'A';
             else if (guests === 2 || guests === 3) type = 'B';
             else if (guests === 4 || guests === 5) type = 'C';
-            if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
 
             const totalRef = ref(db, `queueSystem/${type}/totalIssued`);
             runTransaction(totalRef, (current) => { return (current || 0) + 1; }).then((result) => {
@@ -201,23 +215,30 @@
             });
         };
 
-        // 🔥 毫秒級精準對齊倒數計時
+        // 更改人數邏輯
+        window.changeGuests = function() {
+            if (confirm("修改人數將會重新排隊獲取新號碼，確定嗎？")) {
+                set(myNodeRef, null);
+            }
+        };
+
+        // 取消排隊邏輯
+        window.cancelQueue = function() {
+            if (confirm("確定要取消本次排隊預約嗎？")) {
+                set(myNodeRef, null);
+            }
+        };
+
         function startSynchronizedClock(serverStartTime) {
             clearInterval(timerInterval);
             const totalSec = 90 * 60;
-
             timerInterval = setInterval(() => {
-                // 利用 serverOffset 計算出當前的絕對雲端標準時間
-                const estimatedServerNow = Date.now() + serverOffset;
-                const elapsedSec = Math.floor((estimatedServerNow - serverStartTime) / 1000);
+                const elapsedSec = Math.floor(((Date.now() + serverOffset) - serverStartTime) / 1000);
                 const remain = totalSec - elapsedSec;
-
                 if (remain <= 0) {
-                    clearInterval(timerInterval);
-                    set(myNodeRef, null);
+                    clearInterval(timerInterval); set(myNodeRef, null);
                 } else {
-                    const m = Math.floor(remain / 60);
-                    const s = remain % 60;
+                    const m = Math.floor(remain / 60); const s = remain % 60;
                     document.getElementById('timerDisplay').innerText = String(m).padStart(2,'0') + ":" + String(s).padStart(2,'0');
                 }
             }, 1000);
