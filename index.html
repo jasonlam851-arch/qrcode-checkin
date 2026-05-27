@@ -129,7 +129,7 @@
         import { initializeApp } from "firebase/app";
         import { getDatabase, ref, set, onValue, runTransaction } from "firebase/database";
 
-        // 已經為你填入圖片中的專屬 Firebase 設定資料
+        // 已為你完美補全漏掉的 databaseURL
         const firebaseConfig = {
             apiKey: "AIzaSyDwUF4-rBRG9QGyti2_Smx_PRZ8sZOZL0A",
             authDomain: "my-queue-system-3bcc5.firebaseapp.com",
@@ -166,7 +166,7 @@
                 document.getElementById('waitingCount').innerText = waiting >= 0 ? waiting : 0;
                 document.getElementById('syncStatus').innerText = "☁️ 雲端實時同步中";
 
-                // 新叫號時觸發語音（排除第一次載入網頁時的誤鳴）
+                // 新叫號時觸發語音
                 if (!isFirstLoad && currentCalled > oldCalled) {
                     speakNumber(currentCalled);
                 }
@@ -177,7 +177,7 @@
             }
         }, (error) => {
             console.error(error);
-            document.getElementById('syncStatus').innerText = "❌ 連線失敗，請檢查 Realtime Database 是否已開啟測試模式";
+            document.getElementById('syncStatus').innerText = "❌ 連線失敗，請確保 Realtime Database 已建立並開啟測試模式";
         });
 
         // 1. 客人取號
@@ -191,6 +191,8 @@
                     document.getElementById('ticketDisplay').style.display = 'block';
                     document.getElementById('myNumber').innerText = myNum;
                 }
+            }).catch((err) => {
+                alert("取號失敗，請確保你已點擊過 Firebase 的「建立資料庫」按鈕。");
             });
         };
 
@@ -215,7 +217,7 @@
         // 語音播報 (廣東話)
         function speakNumber(num) {
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // 停止上一句
+                window.speechSynthesis.cancel();
                 let text = `請 ${num} 號到櫃檯`;
                 let utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-HK';
