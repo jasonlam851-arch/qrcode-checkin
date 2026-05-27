@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPad 取號機</title>
+    <title>挺豪餐廳 - 智能取號系統</title>
     <script type="importmap">
       {
         "imports": {
@@ -13,40 +13,205 @@
       }
     </script>
     <style>
-        body { font-family: system-ui, sans-serif; background-color: #f7fafc; padding: 40px; text-align: center; }
-        h1 { color: #2d3748; font-size: 2.5rem; margin-bottom: 10px; }
-        .sub-title { color: #718096; font-size: 1.2rem; margin-bottom: 40px; }
-        .btn-group { display: flex; flex-direction: column; gap: 25px; max-width: 500px; margin: 0 auto; }
-        button { padding: 25px; font-size: 1.8rem; font-weight: bold; border: none; border-radius: 16px; cursor: pointer; color: white; transition: transform 0.1s; box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
-        button:active { transform: scale(0.95); }
-        .btn-a { background-color: #3182ce; }
-        .btn-b { background-color: #dd6b20; }
-        .btn-c { background-color: #38a169; }
-        .ticket-popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 80%; max-width: 400px; }
-        .ticket-num { font-size: 4.5rem; font-weight: bold; color: #2d3748; margin: 20px 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, 'PingFang HK', 'Lantinghei HK', sans-serif;
+        }
+
+        body {
+            background-color: #121212; /* 深奢華黑底 */
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        /* 餐廳品牌區 */
+        .brand-container {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .restaurant-name {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #d4af37; /* 高級金絲色 */
+            letter-spacing: 6px;
+            margin-bottom: 15px;
+            text-shadow: 0px 2px 10px rgba(212, 175, 55, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #888888;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        /* 主容器 */
+        .main-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            color: #ffffff;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+
+        /* 1-5 人數數字按鈕矩陣 */
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .num-btn {
+            background: #262626;
+            border: 1px solid #3d3d3d;
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 600;
+            height: 80px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .num-btn:hover {
+            border-color: #d4af37;
+            color: #d4af37;
+            background: #1f1c12;
+        }
+
+        .num-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 提示字句 */
+        .info-tip {
+            font-size: 0.95rem;
+            color: #666666;
+            letter-spacing: 1px;
+            line-height: 1.5;
+        }
+
+        /* 高級感彈窗（取號成功） */
+        .ticket-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .ticket-box {
+            background: #1e1e1e;
+            border: 2px solid #d4af37;
+            border-radius: 24px;
+            padding: 50px 40px;
+            width: 85%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 10px 50px rgba(212, 175, 55, 0.15);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-brand {
+            font-size: 1.2rem;
+            color: #d4af37;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+        }
+
+        .modal-label {
+            font-size: 1.3rem;
+            color: #888888;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+
+        .ticket-num {
+            font-size: 5.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 15px 0;
+            letter-spacing: 2px;
+        }
+
+        .modal-footer {
+            color: #555555;
+            font-size: 0.9rem;
+            margin-top: 30px;
+            border-top: 1px dashed #333333;
+            padding-top: 20px;
+        }
     </style>
 </head>
 <body>
 
-    <h1>歡迎光臨</h1>
-    <div class="sub-title">請選擇人數取號排隊</div>
-
-    <div class="btn-group">
-        <button class="btn-a" onclick="takeTicket('A')">🧍 1人 (A組)</button>
-        <button class="btn-b" onclick="takeTicket('B')">👨‍👦 2 - 3人 (B組)</button>
-        <button class="btn-c" onclick="takeTicket('C')">👨‍👩‍👧‍👦 4 - 5人 (C組)</button>
+    <div class="brand-container">
+        <div class="restaurant-name">挺豪餐廳</div>
+        <div class="subtitle">Welcome & Queue System</div>
     </div>
 
-    <div class="ticket-popup" id="popup">
-        <div style="font-size: 1.5rem; color: #4a5568;">您的號碼是</div>
-        <div class="ticket-num" id="displayNum">A001</div>
-        <div style="color: #a0aec0; font-size: 1.1rem;">請截圖或記下號碼，等待叫號</div>
+    <div class="main-card">
+        <div class="section-title">請選擇到訪人數</div>
+        
+        <div class="number-grid">
+            <button class="num-btn" onclick="selectGuests(1)">1</button>
+            <button class="num-btn" onclick="selectGuests(2)">2</button>
+            <button class="num-btn" onclick="selectGuests(3)">3</button>
+            <button class="num-btn" onclick="selectGuests(4)">4</button>
+            <button class="num-btn" onclick="selectGuests(5)">5</button>
+        </div>
+
+        <div class="info-tip">
+            工作人員將依據座席狀況為您依序叫號安排。<br>
+            1人為A組｜2-3人為B組｜4-5人為C組
+        </div>
+    </div>
+
+    <div class="ticket-modal" id="ticketModal">
+        <div class="ticket-box">
+            <div class="modal-brand">挺豪餐廳</div>
+            <div class="modal-label">您的排隊號碼</div>
+            <div class="ticket-num" id="displayNum">A001</div>
+            <div class="info-tip" id="groupTip" style="color: #a9a9a9;">( 1人登記 / A組 )</div>
+            <div class="modal-footer">
+                請妥善保存此號碼，工作人員將於現場為您叫號。
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getDatabase, ref, runTransaction } from "firebase/database";
 
+        // 沿用你的 Firebase 設定資料
         const firebaseConfig = {
             apiKey: "AIzaSyDwUF4-rBRG9QGyti2_Smx_PRZ8sZOZL0A",
             authDomain: "my-queue-system-3bcc5.firebaseapp.com",
@@ -60,24 +225,42 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        window.takeTicket = function(type) {
+        // 客人點擊人數後的邏輯處理
+        window.selectGuests = function(count) {
+            let type = 'A';
+            let groupText = `( ${count}人登記 / A組 )`;
+
+            if (count === 1) {
+                type = 'A';
+            } else if (count === 2 || count === 3) {
+                type = 'B';
+                groupText = `( ${count}人登記 / B組 )`;
+            } else if (count === 4 || count === 5) {
+                type = 'C';
+                groupText = `( ${count}人登記 / C組 )`;
+            }
+
+            // 發送到雲端資料庫並獲取最新編號
             const totalRef = ref(db, `queueSystem/${type}/totalIssued`);
             runTransaction(totalRef, (current) => {
                 return (current || 0) + 1;
             }).then((result) => {
                 if (result.committed) {
                     const num = result.snapshot.val();
-                    // 格式化號碼成 A001 格式
                     const formattedNum = type + String(num).padStart(3, '0');
                     
-                    // 顯示彈窗
-                    const popup = document.getElementById('popup');
+                    // 顯示高級感彈窗
+                    const modal = document.getElementById('ticketModal');
                     document.getElementById('displayNum').innerText = formattedNum;
-                    popup.style.display = 'block';
+                    document.getElementById('groupTip').innerText = groupText;
+                    modal.style.display = 'flex';
                     
-                    // 3秒後自動關閉彈窗
-                    setTimeout(() => { popup.style.display = 'none'; }, 3000);
+                    // 4秒後自動關閉彈窗，返回人數選擇畫面
+                    setTimeout(() => { modal.style.display = 'none'; }, 4000);
                 }
+            }).catch((err) => {
+                console.error(err);
+                alert("系統繁忙，請稍後再試。");
             });
         };
     </script>
